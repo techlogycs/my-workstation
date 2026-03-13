@@ -4,7 +4,7 @@
     path: /etc/docker
     state: directory
     mode: "0755"
-  when: enable_docker
+  when: common_enable_docker | default(false)
   tags:
     - docker
 
@@ -12,13 +12,13 @@
   ansible.builtin.stat:
     path: /etc/docker/daemon.json
   register: docker_daemon_file
-  when: enable_docker
+  when: common_enable_docker | default(false)
   tags:
     - docker
 
 - name: Load the current Docker daemon configuration
   when:
-    - enable_docker
+    - common_enable_docker | default(false)
     - docker_daemon_file.stat.exists
   tags:
     - docker
@@ -43,7 +43,7 @@
         (docker_daemon_existing_config | default({}))
         | combine(docker_daemon_config, recursive=True)
       }}
-  when: enable_docker
+  when: common_enable_docker | default(false)
   tags:
     - docker
 
@@ -53,7 +53,7 @@
     content: "{{ docker_daemon_effective_config | to_nice_json }}"
     mode: "0644"
   notify: Restart Docker
-  when: enable_docker
+  when: common_enable_docker | default(false)
   tags:
     - docker
 
@@ -62,6 +62,6 @@
     name: docker
     enabled: true
     state: started
-  when: enable_docker
+  when: common_enable_docker | default(false)
   tags:
     - docker
