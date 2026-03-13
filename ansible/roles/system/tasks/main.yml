@@ -17,6 +17,16 @@
     - packages
     - system
 
+- name: Check if microsoft-edge-stable is available in APT
+  ansible.builtin.shell: apt-cache show microsoft-edge-stable > /dev/null 2>&1
+  register: edge_pkg
+  changed_when: false
+  failed_when: false
+
+- name: Set edge availability fact
+  ansible.builtin.set_fact:
+    common_edge_available: "{{ edge_pkg.rc == 0 }}"
+
 - name: Install baseline APT packages
   ansible.builtin.apt:
     name: >-
@@ -25,6 +35,8 @@
         + common_apt_desktop_packages
         + ([ 'copyq' ] if common_install_copyq else [])
         + ([ 'libreoffice' ] if common_install_libreoffice else [])
+        + ([ 'firefox' ] if common_enable_firefox else [])
+        + ([ 'microsoft-edge-stable' ] if (common_enable_edge and common_edge_available) else [])
         + ([
             'docker-ce',
             'docker-ce-cli',
@@ -32,11 +44,25 @@
             'docker-buildx-plugin',
             'docker-compose-plugin'
           ] if common_enable_docker else [])
+        + ([ 'openvpn' ] if common_enable_openvpn else [])
         + ([ 'flatpak' ] if common_flatpak_apps | length > 0 else [])
       }}
     state: present
     update_cache: true
     cache_valid_time: 3600
+  tags:
+    - packages
+    - system
+
+- name: Warn when Edge was enabled but not available in APT
+  ansible.builtin.debug:
+    msg: >-
+      The feature flag for Edge is enabled, but the package 'microsoft-edge-stable' is not
+      available in APT. Add the Microsoft Edge repository or disable the edge flag.
+  when:
+    - common_enable_edge
+    - not common_edge_available
+  changed_when: false
   tags:
     - packages
     - system

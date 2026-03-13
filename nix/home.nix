@@ -110,6 +110,8 @@ in
     bun
     github-copilot-cli
     nodejs_24
+    uv
+    warp-terminal
   ];
 
   home.sessionVariables = {

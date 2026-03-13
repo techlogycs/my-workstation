@@ -23,8 +23,11 @@ feature_flags:
   office_suite: auto
   vscode: enabled
   brave: enabled
+  firefox: disabled
+  edge: disabled
   docker: enabled
   nix: enabled
+  openvpn: disabled
   file_manager_integration: auto
 clipboard_manager_package_candidates:
   - copyq

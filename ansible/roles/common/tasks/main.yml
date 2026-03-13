@@ -54,6 +54,24 @@
             else 'disabled' if feature_flags.nix == false
             else feature_flags.nix
           }}
+        common_feature_mode_openvpn: >-
+          {{
+            'enabled' if feature_flags.openvpn == true
+            else 'disabled' if feature_flags.openvpn == false
+            else feature_flags.openvpn
+          }}
+        common_feature_mode_firefox: >-
+          {{
+            'enabled' if feature_flags.firefox == true
+            else 'disabled' if feature_flags.firefox == false
+            else feature_flags.firefox
+          }}
+        common_feature_mode_edge: >-
+          {{
+            'enabled' if feature_flags.edge == true
+            else 'disabled' if feature_flags.edge == false
+            else feature_flags.edge
+          }}
         common_feature_mode_file_manager_integration: >-
           {{
             'enabled' if feature_flags.file_manager_integration == true
@@ -71,6 +89,9 @@
           - common_feature_mode_brave in ['enabled', 'disabled', 'auto']
           - common_feature_mode_docker in ['enabled', 'disabled', 'auto']
           - common_feature_mode_nix in ['enabled', 'disabled', 'auto']
+          - common_feature_mode_openvpn in ['enabled', 'disabled', 'auto']
+          - common_feature_mode_firefox in ['enabled', 'disabled', 'auto']
+          - common_feature_mode_edge in ['enabled', 'disabled', 'auto']
           - common_feature_mode_file_manager_integration in ['enabled', 'disabled', 'auto']
         fail_msg: All feature_flags values must be enabled, disabled, or auto.
 
@@ -122,6 +143,9 @@
         common_enable_brave: "{{ common_feature_mode_brave != 'disabled' }}"
         common_enable_docker: "{{ common_feature_mode_docker != 'disabled' }}"
         common_enable_nix: "{{ common_feature_mode_nix != 'disabled' }}"
+        common_enable_openvpn: "{{ common_feature_mode_openvpn != 'disabled' }}"
+        common_enable_firefox: "{{ common_feature_mode_firefox != 'disabled' }}"
+        common_enable_edge: "{{ common_feature_mode_edge != 'disabled' }}"
         common_enable_file_manager_integration: >-
           {{
             common_feature_mode_file_manager_integration == 'enabled'
