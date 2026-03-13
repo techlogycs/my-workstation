@@ -88,8 +88,6 @@
       ansible.builtin.set_fact:
         common_deb_arch: "{{ deb_arch_map.get(ansible_architecture, 'amd64') }}"
         common_host_nix_system: "{{ nix_system_map.get(ansible_architecture, 'x86_64-linux') }}"
-        common_nix_flake_ref: >-
-          {{ dotfiles_repo }}/nix#homeConfigurations.{{ common_host_nix_system }}.activationPackage
         common_home_manager_activation_link: "{{ local_home }}/.cache/home-manager-activation"
         common_has_gnome_desktop: >-
           {{
@@ -112,6 +110,11 @@
             | select('in', ansible_facts.packages.keys() | list)
             | list
           }}
+
+    - name: Derive nix flake reference
+      ansible.builtin.set_fact:
+        common_nix_flake_ref: >-
+          {{ dotfiles_repo }}/nix#homeConfigurations.{{ common_host_nix_system }}.activationPackage
 
     - name: Derive feature enablement facts
       ansible.builtin.set_fact:

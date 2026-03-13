@@ -30,6 +30,9 @@ if [[ ! -d "${REPO_DIR}/.git" ]]; then
     echo "No se pudo determinar el origen del repositorio. Exporta DOTFILES_REPO_URL e inténtalo de nuevo." >&2
     exit 1
   fi
+else
+  echo "El repositorio ya existe en ${REPO_DIR}, omitiendo clonación."
+  git -C "${REPO_DIR}" pull --ff-only
 fi
 
 cd "${REPO_DIR}"
