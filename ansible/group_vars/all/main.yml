@@ -78,12 +78,14 @@ distro_flatpak_apps:
   Ubuntu:
     - org.gimp.GIMP
     - com.bitwarden.desktop
+    - com.discordapp.Discord
     - com.spotify.Client
     - com.valvesoftware.Steam
     - org.videolan.VLC
   Pop!_OS:
     - org.gimp.GIMP
     - com.bitwarden.desktop
+    - com.discordapp.Discord
     - com.spotify.Client
     - com.valvesoftware.Steam
     - org.videolan.VLC
