@@ -42,6 +42,12 @@
             else 'disabled' if feature_flags.brave == false
             else feature_flags.brave
           }}
+        common_feature_mode_thunderbird: >-
+          {{
+            'enabled' if feature_flags.thunderbird == true
+            else 'disabled' if feature_flags.thunderbird == false
+            else feature_flags.thunderbird
+          }}
         common_feature_mode_docker: >-
           {{
             'enabled' if feature_flags.docker == true
@@ -87,6 +93,7 @@
           - common_feature_mode_office_suite in ['enabled', 'disabled', 'auto']
           - common_feature_mode_vscode in ['enabled', 'disabled', 'auto']
           - common_feature_mode_brave in ['enabled', 'disabled', 'auto']
+          - common_feature_mode_thunderbird in ['enabled', 'disabled', 'auto']
           - common_feature_mode_docker in ['enabled', 'disabled', 'auto']
           - common_feature_mode_nix in ['enabled', 'disabled', 'auto']
           - common_feature_mode_openvpn in ['enabled', 'disabled', 'auto']
@@ -117,7 +124,6 @@
             | list
             | length > 0
           }}
-        common_flatpak_apps: "{{ distro_flatpak_apps.get(ansible_distribution, []) }}"
         common_has_nautilus: "{{ 'nautilus' in ansible_facts.packages }}"
         common_installed_clipboard_managers: >-
           {{
@@ -141,11 +147,17 @@
       ansible.builtin.set_fact:
         common_enable_vscode: "{{ common_feature_mode_vscode != 'disabled' }}"
         common_enable_brave: "{{ common_feature_mode_brave != 'disabled' }}"
+        common_enable_thunderbird: "{{ common_feature_mode_thunderbird != 'disabled' }}"
         common_enable_docker: "{{ common_feature_mode_docker != 'disabled' }}"
         common_enable_nix: "{{ common_feature_mode_nix != 'disabled' }}"
         common_enable_openvpn: "{{ common_feature_mode_openvpn != 'disabled' }}"
         common_enable_firefox: "{{ common_feature_mode_firefox != 'disabled' }}"
         common_enable_edge: "{{ common_feature_mode_edge != 'disabled' }}"
+        common_flatpak_apps: >-
+          {{
+            distro_flatpak_apps.get(ansible_distribution, [])
+            + ([ 'org.mozilla.Thunderbird' ] if common_feature_mode_thunderbird != 'disabled' else [])
+          }}
         common_enable_file_manager_integration: >-
           {{
             common_feature_mode_file_manager_integration == 'enabled'

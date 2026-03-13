@@ -106,6 +106,7 @@ Los componentes opcionales están controlados desde `ansible/group_vars/all/main
 
 - Todos los `feature_flags.*` aceptan `enabled`, `disabled` o `auto`. Los booleanos antiguos siguen funcionando porque se normalizan internamente a esos modos.
 - `feature_flags.vscode`, `feature_flags.brave`, `feature_flags.docker` y `feature_flags.nix` usan `enabled` por defecto. Hoy en día `auto` se resuelve igual que `enabled` para esos componentes, porque no hay una detección de alternativa equivalente.
+- `feature_flags.thunderbird` usa `disabled` por defecto; cuando lo activas, instala `org.mozilla.Thunderbird` vía Flatpak.
 - `feature_flags.desktop_tools` usa `auto` por defecto y solo instala tooling específico de escritorio cuando detecta una base compatible.
 - `feature_flags.copyq` usa `auto` por defecto y solo instala CopyQ si no detecta otro gestor de portapapeles ya instalado.
 - `feature_flags.office_suite` usa `auto` por defecto y solo instala LibreOffice si no detecta otra suite ofimática ya instalada.

@@ -23,6 +23,7 @@ feature_flags:
   office_suite: auto
   vscode: enabled
   brave: enabled
+  thunderbird: disabled
   firefox: disabled
   edge: disabled
   docker: enabled
