@@ -145,7 +145,7 @@ Las herramientas de escritorio GNOME se comportan así:
 - Docker usa `json-file` con rotación, modo `non-blocking` y buffer acotado para evitar crecimiento descontrolado de logs y reducir bloqueos por I/O, preservando otras claves ya presentes en `daemon.json` como `data-root`.
 - Nix se instala con Determinate Systems porque simplifica una instalación consistente en Ubuntu/Pop!_OS.
 - Home Manager se activa construyendo el paquete de activación desde el flake del sistema detectado, lo que evita depender de una arquitectura fija o de una instalación previa del ejecutable `home-manager` en el host.
-- Home Manager también instala un timer de usuario que limpia periódicamente ficheros antiguos en `~/Downloads` y `~/.cache`, para limitar acumulación de descargas y cachés efímeras sin tocar archivos recientes.
+- Home Manager también instala un timer de usuario que limpia periódicamente ficheros antiguos en `~/Downloads`, aplica limpieza por antigüedad solo a directorios explícitos de herramientas sin pruning nativo claro como `~/.bun/install/cache`, `~/.cache/cargo-target`, `~/.cache/go-build` y `~/.cache/go/pkg/mod`, y además ejecuta `uv cache prune`, `direnv prune` y `nix-collect-garbage --delete-older-than` para evitar barridos agresivos sobre todo `~/.cache`.
 - Home Manager también instala wrappers `npm` y `npx` en `~/.local/bin` para que Bun pueda actuar como sustituto por defecto de `npm` y `npx` en la shell del usuario.
 - GitHub Copilot CLI se instala mediante el paquete oficial `@github/copilot` usando el `npm` real de Node.js durante la activación de Home Manager, evitando depender del derivation unfree de Nix.
 
@@ -154,6 +154,6 @@ Las herramientas de escritorio GNOME se comportan así:
 - `DOTFILES_REPO_URL` en `bootstrap.sh` si el primer despliegue no parte de un clon Git local.
 - El tema de Oh My Zsh en `nix/home.nix`.
 - Los wrappers `npm` y `npx` en `nix/home.nix` si prefieres mantener los binarios de Node.js sin Bun como compat layer.
-- La política `cleanupPolicy` en `nix/home.nix` si quieres cambiar la frecuencia o la antigüedad máxima de `Downloads` y `~/.cache`.
+- La política `cleanupPolicy` en `nix/home.nix` si quieres cambiar la frecuencia o la antigüedad máxima de `Downloads`, los directorios explícitos con limpieza por antigüedad, o la limpieza nativa de `uv`, `direnv` y Nix.
 - `DOTFILES_EDITOR` si desactivas VS Code y quieres que `EDITOR` y `VISUAL` apunten a otro binario.
 - Los `feature_flags`, `distro_flatpak_apps` y el modo de integración del gestor de archivos en `ansible/group_vars/all/main.yml`.

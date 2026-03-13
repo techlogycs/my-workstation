@@ -54,17 +54,23 @@
     set -Eeuo pipefail
 
     for f in .zshrc .zshenv; do
-      if [[ -e "$HOME/$f" ]]; then
-        # Skip files already managed by Home Manager
-        if [[ "$(readlink -f "$HOME/$f" 2>/dev/null || true)" =~ ^/nix/store/ ]]; then
-          continue
-        fi
+      target="$HOME/$f"
+      backup="$HOME/${f}.home-manager-backup"
 
-        mv -v "$HOME/$f" "$HOME/${f}.home-manager-backup"
+      if [[ ! -e "$target" || -e "$backup" ]]; then
+        continue
       fi
+
+      if [[ "$(readlink -f "$target" 2>/dev/null || true)" =~ ^/nix/store/ ]]; then
+        continue
+      fi
+
+      mv -v "$target" "$backup"
     done
   args:
     executable: /bin/bash
+  register: nix_backup_dotfiles_result
+  changed_when: nix_backup_dotfiles_result.stdout != ''
   when: common_enable_nix
   tags:
     - nix
@@ -74,7 +80,13 @@
   ansible.builtin.command:
     cmd: "{{ common_home_manager_activation_link }}/activate"
   environment:
-    PATH: "{{ (ansible_env.PATH | default('/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin')) + ':/nix/var/nix/profiles/default/bin:' + local_home + '/.nix-profile/bin' }}"
+    PATH: >-
+      {{
+        (ansible_env.PATH | default('/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'))
+        + ':/nix/var/nix/profiles/default/bin:'
+        + local_home
+        + '/.nix-profile/bin'
+      }}
   changed_when: false
   when: common_enable_nix
   tags:

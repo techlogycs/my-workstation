@@ -23,7 +23,7 @@
 - name: Check if VS Code .list file exists
   ansible.builtin.stat:
     path: /etc/apt/sources.list.d/vscode.list
-  register: vscode_list_stat
+  register: apt_repositories_vscode_list_stat
   when: common_enable_vscode
   tags:
     - repos
@@ -35,7 +35,7 @@
     state: absent
   when:
     - common_enable_vscode
-    - vscode_list_stat.stat.exists
+    - apt_repositories_vscode_list_stat.stat.exists
   tags:
     - repos
     - vscode
@@ -43,12 +43,11 @@
 - name: Check if VS Code .sources file exists
   ansible.builtin.stat:
     path: /etc/apt/sources.list.d/vscode.sources
-  register: vscode_sources_stat
+  register: apt_repositories_vscode_sources_stat
   when: common_enable_vscode
   tags:
     - repos
     - vscode
-
 
 - name: Download Microsoft APT signing key (ASCII)
   ansible.builtin.get_url:
@@ -75,7 +74,7 @@
 - name: Check if temporary Microsoft signing key file exists
   ansible.builtin.stat:
     path: /tmp/microsoft.asc
-  register: microsoft_asc_stat
+  register: apt_repositories_microsoft_asc_stat
   when: common_enable_vscode
   tags:
     - repos
@@ -87,7 +86,7 @@
     state: absent
   when:
     - common_enable_vscode
-    - microsoft_asc_stat.stat.exists
+    - apt_repositories_microsoft_asc_stat.stat.exists
   changed_when: false
   tags:
     - repos
@@ -115,7 +114,7 @@
 - name: Check if Brave .list file exists
   ansible.builtin.stat:
     path: /etc/apt/sources.list.d/brave-browser-release.list
-  register: brave_list_stat
+  register: apt_repositories_brave_list_stat
   when: common_enable_brave
   tags:
     - repos
@@ -127,7 +126,7 @@
     state: absent
   when:
     - common_enable_brave
-    - brave_list_stat.stat.exists
+    - apt_repositories_brave_list_stat.stat.exists
   tags:
     - repos
     - brave
@@ -135,12 +134,11 @@
 - name: Check if Brave .sources file exists
   ansible.builtin.stat:
     path: /etc/apt/sources.list.d/brave-browser-release.sources
-  register: brave_sources_stat
+  register: apt_repositories_brave_sources_stat
   when: common_enable_brave
   tags:
     - repos
     - brave
-
 
 - name: Download Brave APT signing key into the system keyring location
   ansible.builtin.get_url:
@@ -181,7 +179,6 @@
   tags:
     - repos
     - docker
-
 
 - name: Remove any existing Docker keyrings that might conflict
   ansible.builtin.file:

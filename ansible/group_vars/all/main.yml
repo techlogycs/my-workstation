@@ -15,7 +15,7 @@ deb_arch_map:
 nix_system_map:
   x86_64: x86_64-linux
   amd64: x86_64-linux
-  aarch64: aarch64-linux
+  # aarch64: aarch64-linux
   arm64: aarch64-linux
 feature_flags:
   desktop_tools: auto
@@ -75,12 +75,14 @@ distro_flatpak_apps:
     - com.spotify.Client
     - com.valvesoftware.Steam
     - org.videolan.VLC
+    - com.rustdesk.RustDesk
   Pop!_OS:
     - org.gimp.GIMP
     - com.bitwarden.desktop
     - com.spotify.Client
     - com.valvesoftware.Steam
     - org.videolan.VLC
+    - com.rustdesk.RustDesk
 docker_daemon_config:
   log-driver: json-file
   log-opts:

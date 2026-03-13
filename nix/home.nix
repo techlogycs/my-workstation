@@ -7,20 +7,42 @@ let
       path = "${homeDirectory}/Downloads";
       maxAgeDays = 90;
     };
-    caches = {
+    directories = {
       enabled = true;
-      maxAgeDays = 14;
-      paths = [
-        "${homeDirectory}/.cache"
+      items = [
+        {
+          path = "${homeDirectory}/.bun/install/cache";
+          maxAgeDays = 30;
+        }
+        {
+          path = "${homeDirectory}/.cache/cargo-target";
+          maxAgeDays = 14;
+        }
+        {
+          path = "${homeDirectory}/.cache/go-build";
+          maxAgeDays = 14;
+        }
+        {
+          path = "${homeDirectory}/.cache/go/pkg/mod";
+          maxAgeDays = 30;
+        }
       ];
+    };
+    tools = {
+      direnv.enabled = true;
+      nix = {
+        enabled = true;
+        maxAgeDays = 30;
+      };
+      uv.enabled = true;
     };
   };
 
-  cleanupTargets = lib.concatMapStringsSep "\n" (path: ''    ${lib.escapeShellArg path}'') cleanupPolicy.caches.paths;
+  cleanupTargets = lib.concatMapStringsSep "\n" (item: ''    ${lib.escapeShellArg item.path}:::${toString item.maxAgeDays}'') cleanupPolicy.directories.items;
 
   cleanupScript = pkgs.writeShellApplication {
     name = "workstation-auto-clean";
-    runtimeInputs = with pkgs; [ coreutils findutils ];
+    runtimeInputs = with pkgs; [ coreutils direnv findutils nix uv ];
     text = ''
             set -Eeuo pipefail
 
@@ -36,18 +58,41 @@ let
               find "$target" -mindepth 1 -depth -type d -empty -mtime +"$age_days" -print -delete
             }
 
+            run_if_available() {
+              local binary="$1"
+              shift
+
+              if command -v "$binary" >/dev/null 2>&1; then
+                "$@"
+              fi
+            }
+
             ${lib.optionalString cleanupPolicy.downloads.enabled ''
               clean_old_files ${lib.escapeShellArg cleanupPolicy.downloads.path} ${toString cleanupPolicy.downloads.maxAgeDays}
             ''}
 
-            ${lib.optionalString cleanupPolicy.caches.enabled ''
+            ${lib.optionalString cleanupPolicy.directories.enabled ''
               cache_targets=(
       ${cleanupTargets}
               )
 
-              for target in "''${cache_targets[@]}"; do
-                clean_old_files "$target" ${toString cleanupPolicy.caches.maxAgeDays}
+              for target_config in "''${cache_targets[@]}"; do
+                target_path="''${target_config%%:::*}"
+                target_age_days="''${target_config##*:::}"
+                clean_old_files "$target_path" "$target_age_days"
               done
+            ''}
+
+            ${lib.optionalString cleanupPolicy.tools.uv.enabled ''
+              run_if_available uv uv cache prune
+            ''}
+
+            ${lib.optionalString cleanupPolicy.tools.direnv.enabled ''
+              run_if_available direnv direnv prune
+            ''}
+
+            ${lib.optionalString cleanupPolicy.tools.nix.enabled ''
+              run_if_available nix-collect-garbage nix-collect-garbage --delete-older-than ${toString cleanupPolicy.tools.nix.maxAgeDays}d
             ''}
     '';
   };
@@ -89,36 +134,45 @@ in
     stateVersion = "25.05";
   };
 
-  # Enable Home Manager; conflicting shell dotfiles are backed up by Ansible.
-  programs.home-manager.enable = true;
+  programs = {
+    # Enable Home Manager; conflicting shell dotfiles are backed up by Ansible.
+    home-manager.enable = true;
 
-  # Zsh is configured declaratively so shell behaviour is reproducible and does
-  # not depend on post-install curl/bash bootstrap scripts.
-  programs.zsh = {
-    enable = true;
-    autocd = true;
-    autosuggestion.enable = true;
-    enableCompletion = true;
-    syntaxHighlighting.enable = true;
-    oh-my-zsh = {
+    # Zsh is configured declaratively so shell behaviour is reproducible and does
+    # not depend on post-install curl/bash bootstrap scripts.
+    zsh = {
       enable = true;
-      plugins = [ "git" ];
-      theme = "robbyrussell";
+      autocd = true;
+      autosuggestion.enable = true;
+      enableCompletion = true;
+      syntaxHighlighting.enable = true;
+      oh-my-zsh = {
+        enable = true;
+        plugins = [ "git" "direnv" ];
+        theme = "robbyrussell";
+      };
+      shellAliases = {
+        ll = "ls -lah";
+        copilot = "${homeDirectory}/.local/bin/copilot";
+        cargo-release = "CARGO_INCREMENTAL=0 RUSTFLAGS='-C target-cpu=native -C codegen-units=1' cargo build --release";
+        go-release = "GOMAXPROCS=$(nproc) go build ./...";
+        npm = "bun";
+        npx = "bunx";
+        yarn = "bun";
+        pnpm = "bun";
+      };
     };
-    shellAliases = {
-      ll = "ls -lah";
-      copilot = "${homeDirectory}/.local/bin/copilot";
-      cargo-release = "CARGO_INCREMENTAL=0 RUSTFLAGS='-C target-cpu=native -C codegen-units=1' cargo build --release";
-      go-release = "GOMAXPROCS=$(nproc) go build ./...";
-      npm = "bun";
-      npx = "bunx";
-      yarn = "bun";
-      pnpm = "bun";
+
+    direnv = {
+      enable = true;
+      nix-direnv.enable = true;
+      enableZshIntegration = true;
     };
   };
 
   home.packages = with pkgs; [
     bun
+    dust
     nodejs_24
     uv
     warp-terminal
@@ -177,7 +231,7 @@ in
   '';
 
   systemd.user.services.workstation-auto-clean = {
-    Unit.Description = "Clean old files from Downloads and cache directories";
+    Unit.Description = "Clean stale files and developer tool caches";
     Service = {
       Type = "oneshot";
       ExecStart = "${cleanupScript}/bin/workstation-auto-clean";
@@ -185,7 +239,7 @@ in
   };
 
   systemd.user.timers.workstation-auto-clean = {
-    Unit.Description = "Run periodic cleanup for Downloads and cache directories";
+    Unit.Description = "Run periodic cleanup for stale files and developer tool caches";
     Timer = {
       OnCalendar = "daily";
       Persistent = true;
