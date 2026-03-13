@@ -53,3 +53,36 @@
   tags:
     - repos
     - brave
+
+- name: Ensure the Docker APT keyring directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+  when: common_enable_docker
+  tags:
+    - repos
+    - docker
+
+- name: Download Docker APT signing key
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /etc/apt/keyrings/docker.gpg
+    mode: "0644"
+  when: common_enable_docker
+  tags:
+    - repos
+    - docker
+
+- name: Register the Docker repository
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [arch={{ common_deb_arch }} signed-by=/etc/apt/keyrings/docker.gpg]
+      https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable
+    filename: docker
+    state: present
+    update_cache: true
+  when: common_enable_docker
+  tags:
+    - repos
+    - docker

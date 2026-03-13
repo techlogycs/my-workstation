@@ -1,4 +1,22 @@
 ---
+- name: Uninstall conflicting Docker packages (docker.io / containerd / runc)
+  ansible.builtin.apt:
+    name:
+      - docker.io
+      - docker-compose
+      - docker-compose-v2
+      - docker-doc
+      - podman-docker
+      - containerd
+      - runc
+    state: absent
+    purge: true
+    autoremove: true
+  when: common_enable_docker
+  tags:
+    - packages
+    - system
+
 - name: Install baseline APT packages
   ansible.builtin.apt:
     name: >-
@@ -7,7 +25,13 @@
         + common_apt_desktop_packages
         + ([ 'copyq' ] if common_install_copyq else [])
         + ([ 'libreoffice' ] if common_install_libreoffice else [])
-        + ([ 'docker.io' ] if common_enable_docker else [])
+        + ([
+            'docker-ce',
+            'docker-ce-cli',
+            'containerd.io',
+            'docker-buildx-plugin',
+            'docker-compose-plugin'
+          ] if common_enable_docker else [])
         + ([ 'flatpak' ] if common_flatpak_apps | length > 0 else [])
       }}
     state: present
