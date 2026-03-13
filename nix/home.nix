@@ -78,7 +78,9 @@ in
     stateVersion = "25.05";
   };
 
+  # Enable Home Manager and configure backup behavior for existing dotfiles.
   programs.home-manager.enable = true;
+  home-manager.backupFileExtension = "backup";
 
   # Zsh is configured declaratively so shell behaviour is reproducible and does
   # not depend on post-install curl/bash bootstrap scripts.

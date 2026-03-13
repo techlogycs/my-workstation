@@ -48,10 +48,33 @@
   tags:
     - nix
 
+- name: Backup existing dotfiles that would conflict with Home Manager
+  become: false
+  ansible.builtin.shell: |
+    set -Eeuo pipefail
+
+    for f in .zshrc .zshenv; do
+      if [[ -e "$HOME/$f" ]]; then
+        # Skip files already managed by Home Manager
+        if [[ "$(readlink -f "$HOME/$f" 2>/dev/null || true)" =~ ^/nix/store/ ]]; then
+          continue
+        fi
+
+        mv -v "$HOME/$f" "$HOME/${f}.home-manager-backup"
+      fi
+    done
+  args:
+    executable: /bin/bash
+  when: common_enable_nix
+  tags:
+    - nix
+
 - name: Activate the Home Manager profile
   become: false
   ansible.builtin.command:
     cmd: "{{ common_home_manager_activation_link }}/activate"
+  environment:
+    PATH: "{{ (ansible_env.PATH | default('/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin')) + ':/nix/var/nix/profiles/default/bin:' + local_home + '/.nix-profile/bin' }}"
   changed_when: false
   when: common_enable_nix
   tags:
