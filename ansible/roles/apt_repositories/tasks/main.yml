@@ -20,48 +20,75 @@
     - brave
     - docker
 
-- name: Remove any old VS Code .list file to prevent Signed-By conflicts
-  ansible.builtin.file:
+- name: Check if VS Code .list file exists
+  ansible.builtin.stat:
     path: /etc/apt/sources.list.d/vscode.list
-    state: absent
+  register: vscode_list_stat
   when: common_enable_vscode
   tags:
     - repos
     - vscode
 
-- name: Remove any existing vscode.sources file to avoid duplicate repository definitions
+- name: Remove VS Code .list file if it exists
   ansible.builtin.file:
-    path: /etc/apt/sources.list.d/vscode.sources
+    path: /etc/apt/sources.list.d/vscode.list
     state: absent
+  when:
+    - common_enable_vscode
+    - vscode_list_stat.stat.exists
+  tags:
+    - repos
+    - vscode
+
+- name: Check if VS Code .sources file exists
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/vscode.sources
+  register: vscode_sources_stat
   when: common_enable_vscode
   tags:
     - repos
     - vscode
+
 
 - name: Download Microsoft APT signing key (ASCII)
   ansible.builtin.get_url:
     url: https://packages.microsoft.com/keys/microsoft.asc
     dest: /tmp/microsoft.asc
     mode: "0644"
+    force: false
   when: common_enable_vscode
   tags:
     - repos
     - vscode
+  changed_when: false
 
 - name: Convert Microsoft APT signing key to GPG keyring format (upstream location)
   ansible.builtin.command:
     cmd: gpg --dearmor --yes --output /usr/share/keyrings/microsoft.gpg /tmp/microsoft.asc
     creates: /usr/share/keyrings/microsoft.gpg
   when: common_enable_vscode
+  changed_when: false
   tags:
     - repos
     - vscode
 
-- name: Clean up temporary Microsoft APT signing key file
+- name: Check if temporary Microsoft signing key file exists
+  ansible.builtin.stat:
+    path: /tmp/microsoft.asc
+  register: microsoft_asc_stat
+  when: common_enable_vscode
+  tags:
+    - repos
+    - vscode
+
+- name: Clean up temporary Microsoft APT signing key file if it exists
   ansible.builtin.file:
     path: /tmp/microsoft.asc
     state: absent
-  when: common_enable_vscode
+  when:
+    - common_enable_vscode
+    - microsoft_asc_stat.stat.exists
+  changed_when: false
   tags:
     - repos
     - vscode
@@ -80,38 +107,52 @@
     group: root
     mode: "0644"
   when: common_enable_vscode
+  changed_when: false
   tags:
     - repos
     - vscode
 
-- name: Remove any old Brave .list file to prevent Signed-By conflicts
-  ansible.builtin.file:
+- name: Check if Brave .list file exists
+  ansible.builtin.stat:
     path: /etc/apt/sources.list.d/brave-browser-release.list
-    state: absent
+  register: brave_list_stat
   when: common_enable_brave
   tags:
     - repos
     - brave
 
-- name: Remove any existing brave-browser-release.sources file to avoid duplicate definitions
+- name: Remove Brave .list file if it exists
   ansible.builtin.file:
-    path: /etc/apt/sources.list.d/brave-browser-release.sources
+    path: /etc/apt/sources.list.d/brave-browser-release.list
     state: absent
+  when:
+    - common_enable_brave
+    - brave_list_stat.stat.exists
+  tags:
+    - repos
+    - brave
+
+- name: Check if Brave .sources file exists
+  ansible.builtin.stat:
+    path: /etc/apt/sources.list.d/brave-browser-release.sources
+  register: brave_sources_stat
   when: common_enable_brave
   tags:
     - repos
     - brave
+
 
 - name: Download Brave APT signing key into the system keyring location
   ansible.builtin.get_url:
     url: https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
     dest: /usr/share/keyrings/brave-browser-archive-keyring.gpg
     mode: "0644"
-    force: true
+    force: false
   when: common_enable_brave
   tags:
     - repos
     - brave
+  changed_when: false
 
 - name: Register the Brave repository via .sources file (upstream style)
   ansible.builtin.copy:
@@ -127,6 +168,7 @@
     group: root
     mode: "0644"
   when: common_enable_brave
+  changed_when: false
   tags:
     - repos
     - brave
@@ -140,14 +182,6 @@
     - repos
     - docker
 
-- name: Remove any existing docker.sources file to avoid duplicate definitions
-  ansible.builtin.file:
-    path: /etc/apt/sources.list.d/docker.sources
-    state: absent
-  when: common_enable_docker
-  tags:
-    - repos
-    - docker
 
 - name: Remove any existing Docker keyrings that might conflict
   ansible.builtin.file:
@@ -172,11 +206,12 @@
     url: https://download.docker.com/linux/ubuntu/gpg
     dest: /tmp/docker.asc
     mode: "0644"
-    force: true
+    force: false
   when: common_enable_docker
   tags:
     - repos
     - docker
+  changed_when: false
 
 - name: Convert Docker APT signing key to GPG keyring format
   ansible.builtin.shell: |
@@ -185,6 +220,7 @@
   args:
     executable: /bin/bash
   when: common_enable_docker
+  changed_when: false
   tags:
     - repos
     - docker
@@ -194,6 +230,7 @@
     path: /tmp/docker.asc
     state: absent
   when: common_enable_docker
+  changed_when: false
   tags:
     - repos
     - docker
@@ -211,6 +248,7 @@
     group: root
     mode: "0644"
   when: common_enable_docker
+  changed_when: false
   tags:
     - repos
     - docker
@@ -219,5 +257,6 @@
   ansible.builtin.apt:
     update_cache: true
   when: common_enable_vscode or common_enable_brave or common_enable_docker
+  changed_when: false
   tags:
     - repos

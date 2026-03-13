@@ -16,6 +16,7 @@ The system utilizes a **hybrid provisioning strategy** to balance stability with
 * **Infrastructure as Code (IaC):** Every system tweak must be versioned and reproducible.
 * **Security by Design:** Integration of DevSecOps best practices into the local workstation environment.
 * **Immutability:** Leveraging Nix to prevent configuration drift in the user space.
+* **Idempotency:** Ansible playbooks will be designed to be idempotent, ensuring safe re-runs without unintended side effects.
 * **Fact-Driven Configuration:** Ansible playbooks will adapt based on detected hardware and OS facts, ensuring optimal performance and compatibility.
 
 ### Implementation Strategy
