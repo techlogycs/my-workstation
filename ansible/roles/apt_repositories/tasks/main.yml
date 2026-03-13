@@ -8,11 +8,48 @@
   tags:
     - repos
 
-- name: Download Microsoft APT signing key
+- name: Ensure the GPG keyrings directory exists
+  ansible.builtin.file:
+    path: /usr/share/keyrings
+    state: directory
+    mode: "0755"
+  when: common_enable_vscode
+  tags:
+    - repos
+    - vscode
+
+- name: Download Microsoft APT signing key (ASCII)
   ansible.builtin.get_url:
     url: https://packages.microsoft.com/keys/microsoft.asc
-    dest: /etc/apt/keyrings/packages.microsoft.asc
+    dest: /tmp/microsoft.asc
     mode: "0644"
+  when: common_enable_vscode
+  tags:
+    - repos
+    - vscode
+
+- name: Convert Microsoft APT signing key to GPG keyring format
+  ansible.builtin.command:
+    cmd: gpg --dearmor --yes --output /usr/share/keyrings/microsoft.gpg /tmp/microsoft.asc
+    creates: /usr/share/keyrings/microsoft.gpg
+  when: common_enable_vscode
+  tags:
+    - repos
+    - vscode
+
+- name: Clean up temporary Microsoft APT signing key file
+  ansible.builtin.file:
+    path: /tmp/microsoft.asc
+    state: absent
+  when: common_enable_vscode
+  tags:
+    - repos
+    - vscode
+
+- name: Remove any existing vscode.sources file to avoid duplicate repository definitions
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/vscode.sources
+    state: absent
   when: common_enable_vscode
   tags:
     - repos
@@ -21,7 +58,7 @@
 - name: Register the VS Code repository
   ansible.builtin.apt_repository:
     repo: >-
-      deb [arch={{ common_deb_arch }} signed-by=/etc/apt/keyrings/packages.microsoft.asc]
+      deb [arch={{ common_deb_arch }} signed-by=/usr/share/keyrings/microsoft.gpg]
       https://packages.microsoft.com/repos/code stable main
     filename: vscode
     state: present
