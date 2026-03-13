@@ -47,6 +47,7 @@
         + ([ 'libreoffice' ] if common_install_libreoffice else [])
         + ([ 'firefox' ] if common_enable_firefox else [])
         + ([ 'microsoft-edge-stable' ] if common_enable_edge else [])
+        + ([ 'git-credential-oauth' ] if common_enable_git_credential_oauth else [])
         + ([
             'docker-ce',
             'docker-ce-cli',
@@ -60,6 +61,22 @@
     state: present
     update_cache: true
     cache_valid_time: 3600
+  tags:
+    - packages
+    - system
+
+- name: Configure git-credential-oauth as the global Git credential helper
+  ansible.builtin.blockinfile:
+    path: "{{ local_home }}/.gitconfig"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK: git-credential-oauth"
+    block: |
+      [credential]
+        helper = oauth
+    create: true
+    mode: "0644"
+  become: true
+  become_user: "{{ local_user }}"
+  when: common_enable_git_credential_oauth
   tags:
     - packages
     - system

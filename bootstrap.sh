@@ -6,6 +6,8 @@ set -Eeuo pipefail
 # the idempotent Ansible playbook.
 
 REPO_DIR="${HOME}/my-workstation"
+DEFAULT_REPO_URL="https://github.com/techlogycs/my-workstation.git"
+REPO_URL="${DOTFILES_REPO_URL:-${DEFAULT_REPO_URL}}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 sudo -v
@@ -18,17 +20,22 @@ done 2>/dev/null &
 SUDO_KEEPALIVE_PID=$!
 trap 'kill "${SUDO_KEEPALIVE_PID}"' EXIT
 
-sudo apt-get update
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y git curl ansible
+missing_packages=()
+
+command -v git >/dev/null 2>&1 || missing_packages+=(git)
+command -v curl >/dev/null 2>&1 || missing_packages+=(curl)
+command -v ansible-playbook >/dev/null 2>&1 || missing_packages+=(ansible)
+
+if (( ${#missing_packages[@]} > 0 )); then
+  sudo apt-get update
+  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "${missing_packages[@]}"
+fi
 
 if [[ ! -d "${REPO_DIR}/.git" ]]; then
-  if [[ -d "${SCRIPT_DIR}/.git" ]]; then
-    git clone "${SCRIPT_DIR}" "${REPO_DIR}"
-  elif [[ -n "${DOTFILES_REPO_URL:-}" ]]; then
-    git clone "${DOTFILES_REPO_URL}" "${REPO_DIR}"
+  if [[ -d "${SCRIPT_DIR}/.git" && "${SCRIPT_DIR}" == "${REPO_DIR}" ]]; then
+    echo "El repositorio ya está disponible en ${REPO_DIR}, omitiendo clonación."
   else
-    echo "No se pudo determinar el origen del repositorio. Exporta DOTFILES_REPO_URL e inténtalo de nuevo." >&2
-    exit 1
+    git clone "${REPO_URL}" "${REPO_DIR}"
   fi
 else
   echo "El repositorio ya existe en ${REPO_DIR}, omitiendo clonación."

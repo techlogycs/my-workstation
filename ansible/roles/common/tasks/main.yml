@@ -66,6 +66,12 @@
             else 'disabled' if feature_flags.openvpn == false
             else feature_flags.openvpn
           }}
+        common_feature_mode_git_credential_oauth: >-
+          {{
+            'enabled' if feature_flags.git_credential_oauth == true
+            else 'disabled' if feature_flags.git_credential_oauth == false
+            else feature_flags.git_credential_oauth
+          }}
         common_feature_mode_firefox: >-
           {{
             'enabled' if feature_flags.firefox == true
@@ -97,6 +103,7 @@
           - common_feature_mode_docker in ['enabled', 'disabled', 'auto']
           - common_feature_mode_nix in ['enabled', 'disabled', 'auto']
           - common_feature_mode_openvpn in ['enabled', 'disabled', 'auto']
+          - common_feature_mode_git_credential_oauth in ['enabled', 'disabled', 'auto']
           - common_feature_mode_firefox in ['enabled', 'disabled', 'auto']
           - common_feature_mode_edge in ['enabled', 'disabled', 'auto']
           - common_feature_mode_file_manager_integration in ['enabled', 'disabled', 'auto']
@@ -151,6 +158,7 @@
         common_enable_docker: "{{ common_feature_mode_docker != 'disabled' }}"
         common_enable_nix: "{{ common_feature_mode_nix != 'disabled' }}"
         common_enable_openvpn: "{{ common_feature_mode_openvpn != 'disabled' }}"
+        common_enable_git_credential_oauth: "{{ common_feature_mode_git_credential_oauth != 'disabled' }}"
         common_enable_firefox: "{{ common_feature_mode_firefox != 'disabled' }}"
         common_enable_edge: "{{ common_feature_mode_edge != 'disabled' }}"
         common_flatpak_apps: >-

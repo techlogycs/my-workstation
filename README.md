@@ -42,7 +42,7 @@ dotfiles/
 ## Flujo recomendado
 
 1. En el host Pop!_OS o Ubuntu real, ejecuta `./bootstrap.sh`.
-2. El script instala `git`, `curl` y `ansible`, clona el repositorio en `~/my-workstation` si hace falta y lanza el playbook local.
+2. El script instala `git`, `curl` y `ansible` solo si faltan, clona el repositorio en `~/my-workstation` desde `https://github.com/techlogycs/my-workstation.git` por defecto si hace falta y lanza el playbook local.
 3. El playbook configura APT y, según los flags de `ansible/group_vars/all/main.yml`, instala VS Code, Brave, Docker, RustDesk nativo, Flatpak en Ubuntu y Pop!_OS, integración con el gestor de archivos y Nix.
 4. Finalmente, Ansible construye y activa Home Manager desde el flake fijado en `nix/`.
 
@@ -105,12 +105,13 @@ El `Makefile` expone también objetivos separados:
 Los componentes opcionales están controlados desde `ansible/group_vars/all/main.yml`:
 
 - Todos los `feature_flags.*` aceptan `enabled`, `disabled` o `auto`. Los booleanos antiguos siguen funcionando porque se normalizan internamente a esos modos.
-- `feature_flags.vscode`, `feature_flags.brave`, `feature_flags.docker` y `feature_flags.nix` usan `enabled` por defecto. Hoy en día `auto` se resuelve igual que `enabled` para esos componentes, porque no hay una detección de alternativa equivalente.
+- `feature_flags.vscode`, `feature_flags.brave`, `feature_flags.docker`, `feature_flags.nix` y `feature_flags.git_credential_oauth` usan `enabled` por defecto. Hoy en día `auto` se resuelve igual que `enabled` para esos componentes, porque no hay una detección de alternativa equivalente.
 - `feature_flags.thunderbird` usa `disabled` por defecto; cuando lo activas, instala `org.mozilla.Thunderbird` vía Flatpak.
 - `feature_flags.desktop_tools` usa `auto` por defecto y solo instala tooling específico de escritorio cuando detecta una base compatible.
 - `feature_flags.copyq` usa `auto` por defecto y solo instala CopyQ si no detecta otro gestor de portapapeles ya instalado.
 - `feature_flags.office_suite` usa `auto` por defecto y solo instala LibreOffice si no detecta otra suite ofimática ya instalada.
 - `feature_flags.file_manager_integration` usa `auto` por defecto y solo habilita la integración si VS Code también está habilitado.
+- `feature_flags.git_credential_oauth` instala `git-credential-oauth` desde Ubuntu y configura `credential.helper=oauth` para el usuario objetivo.
 - `distro_flatpak_apps` define las aplicaciones de escritorio vía Flatpak por distro, excluyendo RustDesk porque se instala de forma nativa.
 - `rustdesk_version` fija la versión de RustDesk que se descarga como paquete `.deb`.
 - `rustdesk_release_arch_map` traduce la arquitectura Debian detectada al sufijo usado por los artefactos oficiales de RustDesk.
@@ -127,8 +128,10 @@ El modo `auto` se comporta así:
 
 El modo `auto` de CopyQ se comporta así:
 
-- Si ya está instalado `copyq` o algún gestor de portapapeles conocido como `gpaste`, `klipper`, `diodon` o `xfce4-clipman`, no instala nada adicional.
+- Si ya está instalado `copyq` o algún gestor de portapapeles conocido como `gpaste`, `klipper`, `diodon`, `cliphist`, `clipman`, `xfce4-clipman` o un applet de portapapeles para COSMIC, no instala nada adicional.
 - Si no detecta ninguno, añade `copyq` al conjunto de paquetes base.
+
+En Pop!_OS 24.04 LTS con COSMIC, System76 no anuncia todavía un historial de portapapeles integrado por defecto en la release actual. Sí aparece como trabajo planificado en el roadmap oficial de COSMIC Epoch 2 bajo “COSMIC Clipboard Manager”, así que la detección `auto` contempla también nombres de paquetes plausibles del ecosistema COSMIC para evitar instalar CopyQ encima cuando esa pieza ya exista en el sistema.
 
 El modo `auto` de LibreOffice se comporta así:
 
@@ -154,7 +157,7 @@ Las herramientas de escritorio GNOME se comportan así:
 
 ## Ajustes que probablemente querrás personalizar
 
-- `DOTFILES_REPO_URL` en `bootstrap.sh` si el primer despliegue no parte de un clon Git local.
+- `DOTFILES_REPO_URL` en `bootstrap.sh` si quieres clonar desde un fork o mirror distinto al repositorio oficial.
 - El tema de Oh My Zsh en `nix/home.nix`.
 - Los wrappers `npm` y `npx` en `nix/home.nix` si prefieres mantener los binarios de Node.js sin Bun como compat layer.
 - La política `cleanupPolicy` en `nix/home.nix` si quieres cambiar la frecuencia o la antigüedad máxima de `Downloads`, los directorios explícitos con limpieza por antigüedad, o la limpieza nativa de `uv`, `direnv` y Nix.

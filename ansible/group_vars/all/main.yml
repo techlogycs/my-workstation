@@ -23,6 +23,7 @@ feature_flags:
   office_suite: auto
   vscode: enabled
   brave: enabled
+  git_credential_oauth: enabled
   thunderbird: disabled
   firefox: disabled
   edge: disabled
@@ -32,6 +33,11 @@ feature_flags:
   file_manager_integration: auto
 clipboard_manager_package_candidates:
   - copyq
+  - cliphist
+  - clipman
+  - clipboard-manager
+  - cosmic-clipboard-manager
+  - cosmic-ext-applet-clipboard-manager
   - diodon
   - gpaste
   - greenclip
