@@ -8,11 +8,29 @@
   tags:
     - repos
 
-- name: Ensure the GPG keyrings directory exists
+- name: Ensure the system keyring directory exists
   ansible.builtin.file:
     path: /usr/share/keyrings
     state: directory
     mode: "0755"
+  when: common_enable_vscode
+  tags:
+    - repos
+    - vscode
+
+- name: Remove any old VS Code .list file to prevent Signed-By conflicts
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/vscode.list
+    state: absent
+  when: common_enable_vscode
+  tags:
+    - repos
+    - vscode
+
+- name: Remove any existing vscode.sources file to avoid duplicate repository definitions
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/vscode.sources
+    state: absent
   when: common_enable_vscode
   tags:
     - repos
@@ -28,7 +46,7 @@
     - repos
     - vscode
 
-- name: Convert Microsoft APT signing key to GPG keyring format
+- name: Convert Microsoft APT signing key to GPG keyring format (upstream location)
   ansible.builtin.command:
     cmd: gpg --dearmor --yes --output /usr/share/keyrings/microsoft.gpg /tmp/microsoft.asc
     creates: /usr/share/keyrings/microsoft.gpg
@@ -46,22 +64,26 @@
     - repos
     - vscode
 
-- name: Remove any existing vscode.sources file to avoid duplicate repository definitions
-  ansible.builtin.file:
-    path: /etc/apt/sources.list.d/vscode.sources
-    state: absent
+- name: Register the VS Code repository (upstream .sources style)
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/vscode.sources
+    content: |
+      Types: deb
+      URIs: https://packages.microsoft.com/repos/code
+      Suites: stable
+      Components: main
+      Architectures: amd64,arm64,armhf
+      Signed-By: /usr/share/keyrings/microsoft.gpg
+    owner: root
+    group: root
+    mode: "0644"
   when: common_enable_vscode
   tags:
     - repos
     - vscode
 
-- name: Register the VS Code repository
-  ansible.builtin.apt_repository:
-    repo: >-
-      deb [arch={{ common_deb_arch }} signed-by=/usr/share/keyrings/microsoft.gpg]
-      https://packages.microsoft.com/repos/code stable main
-    filename: vscode
-    state: present
+- name: Update apt cache after adding Microsoft repo
+  ansible.builtin.apt:
     update_cache: true
   when: common_enable_vscode
   tags:
