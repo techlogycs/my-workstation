@@ -1,0 +1,39 @@
+---
+- name: Provision a Pop!_OS or Ubuntu workstation baseline
+  hosts: workstation
+  gather_facts: true
+  become: true
+
+  roles:
+    - role: common
+      tags:
+        - always
+        - facts
+    - role: system
+      tags:
+        - system
+        - packages
+        - shell
+    - role: apt_repositories
+      tags:
+        - repos
+        - vscode
+        - brave
+    - role: desktop_apps
+      tags:
+        - applications
+        - vscode
+        - brave
+    - role: flatpak
+      tags:
+        - flatpak
+    - role: docker
+      tags:
+        - docker
+    - role: file_manager
+      tags:
+        - file-manager
+        - vscode
+    - role: nix
+      tags:
+        - nix

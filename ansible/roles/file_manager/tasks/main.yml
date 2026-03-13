@@ -1,0 +1,95 @@
+---
+- name: Ensure the Nautilus scripts directory exists
+  become: false
+  ansible.builtin.file:
+    path: "{{ local_home }}/.local/share/nautilus/scripts"
+    state: directory
+    mode: "0755"
+  when: common_use_nautilus_scripts
+  tags:
+    - file-manager
+    - vscode
+
+- name: Install the Open in Code Nautilus helper
+  become: false
+  ansible.builtin.copy:
+    dest: "{{ local_home }}/.local/share/nautilus/scripts/Open in Code"
+    mode: "0755"
+    content: |
+      #!/usr/bin/env bash
+      set -Eeuo pipefail
+
+      target="${NAUTILUS_SCRIPT_SELECTED_FILE_PATHS:-$PWD}"
+      exec code "$target"
+  when: common_use_nautilus_scripts
+  tags:
+    - file-manager
+    - vscode
+
+- name: Remove the Nautilus helper when it is not the selected integration
+  become: false
+  ansible.builtin.file:
+    path: "{{ local_home }}/.local/share/nautilus/scripts/Open in Code"
+    state: absent
+  register: file_manager_nautilus_helper_cleanup
+  when: not common_use_nautilus_scripts
+  tags:
+    - file-manager
+    - vscode
+
+- name: Ensure the local applications directory exists
+  become: false
+  ansible.builtin.file:
+    path: "{{ local_home }}/.local/share/applications"
+    state: directory
+    mode: "0755"
+  when: common_use_desktop_entry
+  tags:
+    - file-manager
+    - vscode
+
+- name: Install a desktop-entry fallback to open directories in VS Code
+  become: false
+  ansible.builtin.copy:
+    dest: "{{ local_home }}/.local/share/applications/code-open-here.desktop"
+    mode: "0644"
+    content: |
+      [Desktop Entry]
+      Type=Application
+      Version=1.0
+      Name=Open in Visual Studio Code
+      Comment=Open directories in Visual Studio Code
+      TryExec=code
+      Exec=code %F
+      Terminal=false
+      NoDisplay=true
+      Categories=Development;IDE;
+      MimeType=inode/directory;
+  register: file_manager_desktop_entry_result
+  when: common_use_desktop_entry
+  tags:
+    - file-manager
+    - vscode
+
+- name: Remove the desktop-entry fallback when it is not selected
+  become: false
+  ansible.builtin.file:
+    path: "{{ local_home }}/.local/share/applications/code-open-here.desktop"
+    state: absent
+  register: file_manager_desktop_entry_cleanup
+  when: not common_use_desktop_entry
+  tags:
+    - file-manager
+    - vscode
+
+- name: Refresh the desktop entry database when the fallback changes
+  become: false
+  ansible.builtin.command:
+    cmd: update-desktop-database "{{ local_home }}/.local/share/applications"
+  changed_when: false
+  when:
+    - (file_manager_desktop_entry_result is defined and file_manager_desktop_entry_result.changed) or
+      (file_manager_desktop_entry_cleanup is defined and file_manager_desktop_entry_cleanup.changed)
+  tags:
+    - file-manager
+    - vscode

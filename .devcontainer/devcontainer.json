@@ -1,0 +1,30 @@
+{
+  "name": "my-workstation-lab",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "remoteUser": "vscode",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "redhat.ansible",
+        "jnoortheen.nix-ide",
+        "tamasfe.even-better-toml"
+      ],
+      "settings": {
+        "ansible.validation.lint.enabled": true,
+        "nix.enableLanguageServer": true,
+        "editor.formatOnSave": true,
+        "[nix]": {
+          "editor.defaultFormatter": "jnoortheen.nix-ide"
+        },
+        "[yaml]": {
+          "editor.formatOnSave": false
+        }
+      }
+    }
+  },
+  "postCreateCommand": "bash -c 'set -Eeuo pipefail; nix profile add nixpkgs#home-manager nixpkgs#statix nixpkgs#nixpkgs-fmt; DOTFILES_USER=\"$USER\" DOTFILES_HOME=\"$HOME\" NIX_SYSTEM=\"$(nix eval --impure --raw --expr builtins.currentSystem)\" nix flake check --impure ${containerWorkspaceFolder}/nix'"
+}

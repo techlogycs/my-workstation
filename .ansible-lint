@@ -1,0 +1,11 @@
+---
+# Keep the signal high: ignore style-only checks that do not improve safety or
+# idempotence, but leave behavioural and reliability rules enabled.
+profile: production
+exclude_paths:
+  - .devcontainer/
+skip_list:
+  # - yaml[line-length]  # Enable line-length check
+  - name[casing]
+warn_list:
+  - experimental

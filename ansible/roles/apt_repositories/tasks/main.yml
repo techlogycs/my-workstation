@@ -1,0 +1,55 @@
+---
+- name: Ensure the APT keyring directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+  when: common_enable_vscode or common_enable_brave
+  tags:
+    - repos
+
+- name: Download Microsoft APT signing key
+  ansible.builtin.get_url:
+    url: https://packages.microsoft.com/keys/microsoft.asc
+    dest: /etc/apt/keyrings/packages.microsoft.asc
+    mode: "0644"
+  when: common_enable_vscode
+  tags:
+    - repos
+    - vscode
+
+- name: Register the VS Code repository
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [arch={{ common_deb_arch }} signed-by=/etc/apt/keyrings/packages.microsoft.asc]
+      https://packages.microsoft.com/repos/code stable main
+    filename: vscode
+    state: present
+    update_cache: true
+  when: common_enable_vscode
+  tags:
+    - repos
+    - vscode
+
+- name: Download Brave APT signing key
+  ansible.builtin.get_url:
+    url: https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+    dest: /etc/apt/keyrings/brave-browser-archive-keyring.gpg
+    mode: "0644"
+  when: common_enable_brave
+  tags:
+    - repos
+    - brave
+
+- name: Register the Brave repository
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [signed-by=/etc/apt/keyrings/brave-browser-archive-keyring.gpg arch={{ common_deb_arch }}]
+      https://brave-browser-apt-release.s3.brave.com/ stable main
+    filename: brave-browser-release
+    state: present
+    update_cache: true
+  when: common_enable_brave
+  tags:
+    - repos
+    - brave

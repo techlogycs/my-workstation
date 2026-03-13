@@ -1,0 +1,41 @@
+---
+- name: Query configured system Flatpak remotes
+  ansible.builtin.command:
+    cmd: flatpak remotes --system --columns=name
+  changed_when: false
+  register: flatpak_remotes
+  when: common_flatpak_apps | length > 0
+  tags:
+    - flatpak
+
+- name: Ensure Flathub is configured system-wide
+  ansible.builtin.command:
+    cmd: flatpak remote-add --system --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+  when:
+    - common_flatpak_apps | length > 0
+    - "'flathub' not in flatpak_remotes.stdout_lines"
+  changed_when: false
+  tags:
+    - flatpak
+
+- name: Check which Flatpak applications are already installed
+  ansible.builtin.command:
+    cmd: flatpak info --system {{ item }}
+  loop: "{{ common_flatpak_apps }}"
+  register: flatpak_install_checks
+  changed_when: false
+  failed_when: false
+  when: common_flatpak_apps | length > 0
+  tags:
+    - flatpak
+
+- name: Install missing Flatpak applications from Flathub
+  ansible.builtin.command:
+    cmd: flatpak install --system --noninteractive flathub {{ item.item }}
+  loop: "{{ flatpak_install_checks.results | default([]) }}"
+  when:
+    - common_flatpak_apps | length > 0
+    - item.rc != 0
+  changed_when: false
+  tags:
+    - flatpak

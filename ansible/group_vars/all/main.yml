@@ -1,0 +1,87 @@
+---
+local_user: "{{ lookup('ansible.builtin.env', 'USER') }}"
+local_home: "{{ lookup('ansible.builtin.env', 'HOME') }}"
+dotfiles_repo: "{{ local_home }}/my-workstation"
+supported_distributions:
+  - Ubuntu
+  - Pop!_OS
+deb_arch_map:
+  x86_64: amd64
+  amd64: amd64
+  aarch64: arm64
+  arm64: arm64
+  armv7l: armhf
+  armhf: armhf
+nix_system_map:
+  x86_64: x86_64-linux
+  amd64: x86_64-linux
+  aarch64: aarch64-linux
+  arm64: aarch64-linux
+feature_flags:
+  desktop_tools: auto
+  copyq: auto
+  office_suite: auto
+  vscode: enabled
+  brave: enabled
+  docker: enabled
+  nix: enabled
+  file_manager_integration: auto
+clipboard_manager_package_candidates:
+  - copyq
+  - diodon
+  - gpaste
+  - greenclip
+  - klipper
+  - parcellite
+  - clipit
+  - qlipper
+  - xfce4-clipman
+  - xfce4-clipman-plugin
+gnome_desktop_package_candidates:
+  - gnome-shell
+  - gnome-session
+  - gnome-session-bin
+  - ubuntu-desktop
+  - ubuntu-desktop-minimal
+  - pop-desktop
+office_suite_package_candidates:
+  - libreoffice
+  - libreoffice-core
+  - onlyoffice-desktopeditors
+  - calligra
+  - abiword
+  - gnumeric
+apt_base_packages:
+  - ca-certificates
+  - curl
+  - desktop-file-utils
+  - git
+  - gnupg
+  - software-properties-common
+  - zsh
+distro_desktop_packages:
+  Ubuntu:
+    - gnome-tweaks
+  Pop!_OS:
+    - gnome-tweaks
+distro_flatpak_apps:
+  Ubuntu:
+    - org.gimp.GIMP
+    - com.bitwarden.desktop
+    - com.spotify.Client
+    - com.valvesoftware.Steam
+    - org.videolan.VLC
+  Pop!_OS:
+    - org.gimp.GIMP
+    - com.bitwarden.desktop
+    - com.spotify.Client
+    - com.valvesoftware.Steam
+    - org.videolan.VLC
+docker_daemon_config:
+  log-driver: json-file
+  log-opts:
+    max-size: 10m
+    max-file: "3"
+    mode: non-blocking
+    max-buffer-size: 4m
+vscode_file_manager_integration: auto

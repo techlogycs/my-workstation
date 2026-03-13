@@ -1,0 +1,14 @@
+---
+- name: Install VS Code and Brave from official repositories
+  ansible.builtin.apt:
+    name: >-
+      {{
+        ([ 'code' ] if common_enable_vscode else [])
+        + ([ 'brave-browser' ] if common_enable_brave else [])
+      }}
+    state: present
+  when: common_enable_vscode or common_enable_brave
+  tags:
+    - applications
+    - vscode
+    - brave

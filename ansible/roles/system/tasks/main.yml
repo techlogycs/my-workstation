@@ -1,0 +1,61 @@
+---
+- name: Install baseline APT packages
+  ansible.builtin.apt:
+    name: >-
+      {{
+        apt_base_packages
+        + common_apt_desktop_packages
+        + ([ 'copyq' ] if common_install_copyq else [])
+        + ([ 'libreoffice' ] if common_install_libreoffice else [])
+        + ([ 'docker.io' ] if common_enable_docker else [])
+        + ([ 'flatpak' ] if common_flatpak_apps | length > 0 else [])
+      }}
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  tags:
+    - packages
+    - system
+
+- name: Report when CopyQ auto mode defers to an existing clipboard manager
+  ansible.builtin.debug:
+    msg: >-
+      Skipping CopyQ because the system already has a clipboard manager installed:
+      {{ common_installed_clipboard_managers | join(', ') }}.
+  when:
+    - common_feature_mode_copyq == 'auto'
+    - not common_install_copyq
+  changed_when: false
+  tags:
+    - packages
+    - system
+
+- name: Report when LibreOffice auto mode defers to an existing office suite
+  ansible.builtin.debug:
+    msg: >-
+      Skipping LibreOffice because the system already has an office suite installed:
+      {{ common_installed_office_suites | join(', ') }}.
+  when:
+    - common_feature_mode_office_suite == 'auto'
+    - not common_install_libreoffice
+  changed_when: false
+  tags:
+    - packages
+    - system
+
+- name: Ensure the login shell is Zsh for the target user
+  ansible.builtin.user:
+    name: "{{ local_user }}"
+    shell: /usr/bin/zsh
+    groups: "{{ 'docker' if common_enable_docker else omit }}"
+    append: true
+  tags:
+    - shell
+    - system
+
+# CopyQ config setup (Win+V shortcut)
+- name: Include CopyQ config tasks
+  ansible.builtin.import_tasks: copyq.yml
+  when: common_install_copyq
+  tags:
+    - copyq

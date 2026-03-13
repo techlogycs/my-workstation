@@ -1,0 +1,183 @@
+---
+- name: Validate the host distribution and derive shared facts
+  tags:
+    - facts
+  block:
+    - name: Ensure this playbook only runs on Debian-derived hosts
+      ansible.builtin.assert:
+        that:
+          - ansible_os_family == 'Debian'
+          - ansible_distribution in supported_distributions
+        fail_msg: This repository targets Pop!_OS and other Ubuntu-derived hosts.
+
+    - name: Normalize feature flags to string modes
+      ansible.builtin.set_fact:
+        common_feature_mode_desktop_tools: >-
+          {{
+            'enabled' if feature_flags.desktop_tools == true
+            else 'disabled' if feature_flags.desktop_tools == false
+            else feature_flags.desktop_tools
+          }}
+        common_feature_mode_copyq: >-
+          {{
+            'enabled' if feature_flags.copyq == true
+            else 'disabled' if feature_flags.copyq == false
+            else feature_flags.copyq
+          }}
+        common_feature_mode_office_suite: >-
+          {{
+            'enabled' if feature_flags.office_suite == true
+            else 'disabled' if feature_flags.office_suite == false
+            else feature_flags.office_suite
+          }}
+        common_feature_mode_vscode: >-
+          {{
+            'enabled' if feature_flags.vscode == true
+            else 'disabled' if feature_flags.vscode == false
+            else feature_flags.vscode
+          }}
+        common_feature_mode_brave: >-
+          {{
+            'enabled' if feature_flags.brave == true
+            else 'disabled' if feature_flags.brave == false
+            else feature_flags.brave
+          }}
+        common_feature_mode_docker: >-
+          {{
+            'enabled' if feature_flags.docker == true
+            else 'disabled' if feature_flags.docker == false
+            else feature_flags.docker
+          }}
+        common_feature_mode_nix: >-
+          {{
+            'enabled' if feature_flags.nix == true
+            else 'disabled' if feature_flags.nix == false
+            else feature_flags.nix
+          }}
+        common_feature_mode_file_manager_integration: >-
+          {{
+            'enabled' if feature_flags.file_manager_integration == true
+            else 'disabled' if feature_flags.file_manager_integration == false
+            else feature_flags.file_manager_integration
+          }}
+
+    - name: Ensure feature flag modes are valid
+      ansible.builtin.assert:
+        that:
+          - common_feature_mode_desktop_tools in ['enabled', 'disabled', 'auto']
+          - common_feature_mode_copyq in ['enabled', 'disabled', 'auto']
+          - common_feature_mode_office_suite in ['enabled', 'disabled', 'auto']
+          - common_feature_mode_vscode in ['enabled', 'disabled', 'auto']
+          - common_feature_mode_brave in ['enabled', 'disabled', 'auto']
+          - common_feature_mode_docker in ['enabled', 'disabled', 'auto']
+          - common_feature_mode_nix in ['enabled', 'disabled', 'auto']
+          - common_feature_mode_file_manager_integration in ['enabled', 'disabled', 'auto']
+        fail_msg: All feature_flags values must be enabled, disabled, or auto.
+
+    - name: Ensure the file manager integration mode is valid
+      ansible.builtin.assert:
+        that:
+          - vscode_file_manager_integration in ['auto', 'nautilus', 'desktop-entry', 'disabled']
+        fail_msg: vscode_file_manager_integration must be auto, nautilus, desktop-entry, or disabled.
+
+    - name: Gather installed package facts
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Derive host package and platform facts
+      ansible.builtin.set_fact:
+        common_deb_arch: "{{ deb_arch_map.get(ansible_architecture, 'amd64') }}"
+        common_host_nix_system: "{{ nix_system_map.get(ansible_architecture, 'x86_64-linux') }}"
+        common_nix_flake_ref: >-
+          {{ dotfiles_repo }}/nix#homeConfigurations.{{ common_host_nix_system }}.activationPackage
+        common_home_manager_activation_link: "{{ local_home }}/.cache/home-manager-activation"
+        common_has_gnome_desktop: >-
+          {{
+            gnome_desktop_package_candidates
+            | select('in', ansible_facts.packages.keys() | list)
+            | list
+            | length > 0
+          }}
+        common_flatpak_apps: "{{ distro_flatpak_apps.get(ansible_distribution, []) }}"
+        common_has_nautilus: "{{ 'nautilus' in ansible_facts.packages }}"
+        common_installed_clipboard_managers: >-
+          {{
+            clipboard_manager_package_candidates
+            | select('in', ansible_facts.packages.keys() | list)
+            | list
+          }}
+        common_installed_office_suites: >-
+          {{
+            office_suite_package_candidates
+            | select('in', ansible_facts.packages.keys() | list)
+            | list
+          }}
+
+    - name: Derive feature enablement facts
+      ansible.builtin.set_fact:
+        common_enable_vscode: "{{ common_feature_mode_vscode != 'disabled' }}"
+        common_enable_brave: "{{ common_feature_mode_brave != 'disabled' }}"
+        common_enable_docker: "{{ common_feature_mode_docker != 'disabled' }}"
+        common_enable_nix: "{{ common_feature_mode_nix != 'disabled' }}"
+        common_enable_file_manager_integration: >-
+          {{
+            common_feature_mode_file_manager_integration == 'enabled'
+            or (
+              common_feature_mode_file_manager_integration == 'auto'
+              and common_feature_mode_vscode != 'disabled'
+            )
+          }}
+        common_apt_desktop_packages: >-
+          {{
+            distro_desktop_packages.get(ansible_distribution, [])
+            if (
+              common_feature_mode_desktop_tools == 'enabled'
+              or (common_feature_mode_desktop_tools == 'auto' and common_has_gnome_desktop)
+            )
+            else []
+          }}
+        common_install_copyq: >-
+          {{
+            common_feature_mode_copyq == 'enabled'
+            or (
+              common_feature_mode_copyq == 'auto'
+              and (
+                clipboard_manager_package_candidates
+                | select('in', ansible_facts.packages.keys() | list)
+                | list
+                | length
+              ) == 0
+            )
+          }}
+        common_install_libreoffice: >-
+          {{
+            common_feature_mode_office_suite == 'enabled'
+            or (
+              common_feature_mode_office_suite == 'auto'
+              and (
+                office_suite_package_candidates
+                | select('in', ansible_facts.packages.keys() | list)
+                | list
+                | length
+              ) == 0
+            )
+          }}
+
+    - name: Derive file manager integration facts
+      ansible.builtin.set_fact:
+        common_use_nautilus_scripts: >-
+          {{
+            common_enable_file_manager_integration
+            and common_enable_vscode
+            and vscode_file_manager_integration != 'disabled'
+            and (vscode_file_manager_integration == 'nautilus'
+              or (vscode_file_manager_integration == 'auto' and 'nautilus' in ansible_facts.packages))
+          }}
+        common_use_desktop_entry: >-
+          {{
+            common_enable_file_manager_integration
+            and common_enable_vscode
+            and vscode_file_manager_integration != 'disabled'
+            and (vscode_file_manager_integration == 'desktop-entry'
+              or (vscode_file_manager_integration == 'auto' and 'nautilus' not in ansible_facts.packages))
+          }}
