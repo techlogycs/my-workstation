@@ -43,7 +43,7 @@ dotfiles/
 
 1. En el host Pop!_OS o Ubuntu real, ejecuta `./bootstrap.sh`.
 2. El script instala `git`, `curl` y `ansible`, clona el repositorio en `~/my-workstation` si hace falta y lanza el playbook local.
-3. El playbook configura APT y, según los flags de `ansible/group_vars/all/main.yml`, instala VS Code, Brave, Docker, Flatpak en Ubuntu y Pop!_OS, integración con el gestor de archivos y Nix.
+3. El playbook configura APT y, según los flags de `ansible/group_vars/all/main.yml`, instala VS Code, Brave, Docker, RustDesk nativo, Flatpak en Ubuntu y Pop!_OS, integración con el gestor de archivos y Nix.
 4. Finalmente, Ansible construye y activa Home Manager desde el flake fijado en `nix/`.
 
 ## Roles y tags
@@ -53,7 +53,7 @@ El playbook usa roles pequeños y etiquetados para que puedas ejecutar solo una 
 - `common`: validación del host y facts compartidos.
 - `system`: paquetes base, herramientas de escritorio y shell por defecto.
 - `apt_repositories`: repositorios y llaves APT de proveedores.
-- `desktop_apps`: instalación de VS Code y Brave.
+- `desktop_apps`: instalación de VS Code, Brave y RustDesk nativo.
 - `flatpak`: Flathub y aplicaciones Flatpak por distro.
 - `docker`: configuración de `daemon.json` y servicio.
 - `file_manager`: integración “Open in Code”.
@@ -111,7 +111,9 @@ Los componentes opcionales están controlados desde `ansible/group_vars/all/main
 - `feature_flags.copyq` usa `auto` por defecto y solo instala CopyQ si no detecta otro gestor de portapapeles ya instalado.
 - `feature_flags.office_suite` usa `auto` por defecto y solo instala LibreOffice si no detecta otra suite ofimática ya instalada.
 - `feature_flags.file_manager_integration` usa `auto` por defecto y solo habilita la integración si VS Code también está habilitado.
-- `distro_flatpak_apps` define las aplicaciones de escritorio vía Flatpak por distro.
+- `distro_flatpak_apps` define las aplicaciones de escritorio vía Flatpak por distro, excluyendo RustDesk porque se instala de forma nativa.
+- `rustdesk_version` fija la versión de RustDesk que se descarga como paquete `.deb`.
+- `rustdesk_release_arch_map` traduce la arquitectura Debian detectada al sufijo usado por los artefactos oficiales de RustDesk.
 - `supported_distributions`, `deb_arch_map` y `nix_system_map` convierten facts de Ansible en valores utilizables para APT y Nix en Ubuntu y Pop!_OS, incluyendo hosts ARM64.
 - `clipboard_manager_package_candidates` define qué paquetes cuentan como gestor de portapapeles existente a efectos del modo `auto` de CopyQ.
 - `office_suite_package_candidates` define qué paquetes cuentan como suite ofimática existente a efectos del modo `auto` de LibreOffice.
@@ -140,8 +142,9 @@ Las herramientas de escritorio GNOME se comportan así:
 
 ## Decisiones técnicas
 
-- Ubuntu y Pop!_OS usan Flatpak para las aplicaciones de escritorio de terceros; la selección se resuelve a partir de facts de Ansible y se puede diferenciar por distro sin tocar los roles.
+- Ubuntu y Pop!_OS usan Flatpak para la mayoría de aplicaciones de escritorio de terceros; la selección se resuelve a partir de facts de Ansible y se puede diferenciar por distro sin tocar los roles.
 - La instalación de Flatpak comprueba primero qué remotos y aplicaciones existen antes de añadir o instalar nada, para mantener la ejecución repetible.
+- RustDesk se instala desde el `.deb` oficial upstream y no vía Flatpak, porque el servicio nativo de systemd es el camino necesario para acceso pre-login y reinicios limpios del host.
 - Docker usa `json-file` con rotación, modo `non-blocking` y buffer acotado para evitar crecimiento descontrolado de logs y reducir bloqueos por I/O, preservando otras claves ya presentes en `daemon.json` como `data-root`.
 - Nix se instala con Determinate Systems porque simplifica una instalación consistente en Ubuntu/Pop!_OS.
 - Home Manager se activa construyendo el paquete de activación desde el flake del sistema detectado, lo que evita depender de una arquitectura fija o de una instalación previa del ejecutable `home-manager` en el host.
@@ -156,4 +159,9 @@ Las herramientas de escritorio GNOME se comportan así:
 - Los wrappers `npm` y `npx` en `nix/home.nix` si prefieres mantener los binarios de Node.js sin Bun como compat layer.
 - La política `cleanupPolicy` en `nix/home.nix` si quieres cambiar la frecuencia o la antigüedad máxima de `Downloads`, los directorios explícitos con limpieza por antigüedad, o la limpieza nativa de `uv`, `direnv` y Nix.
 - `DOTFILES_EDITOR` si desactivas VS Code y quieres que `EDITOR` y `VISUAL` apunten a otro binario.
+- `rustdesk_version` en `ansible/group_vars/all/main.yml` si quieres fijar otra release oficial de RustDesk.
 - Los `feature_flags`, `distro_flatpak_apps` y el modo de integración del gestor de archivos en `ansible/group_vars/all/main.yml`.
+
+## Nota sobre RustDesk
+
+RustDesk queda aprovisionado como paquete nativo y con el servicio `rustdesk` habilitado en systemd, así que tras volver a ejecutar el playbook no debería hacer falta reiniciar toda la máquina. Si el login manager sigue usando Wayland, el acceso a la pantalla de login puede seguir limitado porque upstream todavía depende de X11 para ese escenario.

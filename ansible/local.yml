@@ -24,6 +24,7 @@
         - applications
         - vscode
         - brave
+        - rustdesk
     - role: flatpak
       tags:
         - flatpak

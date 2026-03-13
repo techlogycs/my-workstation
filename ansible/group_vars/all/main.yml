@@ -75,14 +75,16 @@ distro_flatpak_apps:
     - com.spotify.Client
     - com.valvesoftware.Steam
     - org.videolan.VLC
-    - com.rustdesk.RustDesk
   Pop!_OS:
     - org.gimp.GIMP
     - com.bitwarden.desktop
     - com.spotify.Client
     - com.valvesoftware.Steam
     - org.videolan.VLC
-    - com.rustdesk.RustDesk
+rustdesk_version: "1.4.6"
+rustdesk_release_arch_map:
+  amd64: x86_64
+  arm64: aarch64
 docker_daemon_config:
   log-driver: json-file
   log-opts:

@@ -12,3 +12,71 @@
     - applications
     - vscode
     - brave
+
+- name: Ensure RustDesk native packages are available for this architecture
+  ansible.builtin.assert:
+    that:
+      - common_deb_arch in rustdesk_release_arch_map
+    fail_msg: RustDesk publishes native Debian packages only for amd64 and arm64.
+  tags:
+    - applications
+    - rustdesk
+
+- name: Check whether RustDesk is still installed as a system Flatpak
+  ansible.builtin.command:
+    cmd: flatpak info --system com.rustdesk.RustDesk
+  register: desktop_apps_rustdesk_flatpak_info
+  changed_when: false
+  failed_when: false
+  when: "'flatpak' in ansible_facts.packages"
+  tags:
+    - applications
+    - rustdesk
+
+- name: Remove the system RustDesk Flatpak before installing the native package
+  ansible.builtin.command:
+    cmd: flatpak uninstall --system --noninteractive com.rustdesk.RustDesk
+  changed_when: desktop_apps_rustdesk_flatpak_info.rc == 0
+  when:
+    - "'flatpak' in ansible_facts.packages"
+    - desktop_apps_rustdesk_flatpak_info.rc == 0
+  tags:
+    - applications
+    - rustdesk
+
+- name: Download the pinned RustDesk Debian package
+  ansible.builtin.get_url:
+    url: >-
+      https://github.com/rustdesk/rustdesk/releases/download/{{ rustdesk_version
+      }}/{{ rustdesk_package_filename }}
+    dest: /tmp/{{ rustdesk_package_filename }}
+    mode: "0644"
+    force: false
+  vars:
+    rustdesk_package_filename: >-
+      rustdesk-{{ rustdesk_version }}-{{ rustdesk_release_arch_map[common_deb_arch] }}.deb
+  tags:
+    - applications
+    - rustdesk
+
+- name: Install RustDesk from the pinned upstream Debian package
+  ansible.builtin.apt:
+    deb: /tmp/{{ rustdesk_package_filename }}
+    state: present
+    update_cache: true
+  vars:
+    rustdesk_package_filename: >-
+      rustdesk-{{ rustdesk_version }}-{{ rustdesk_release_arch_map[common_deb_arch] }}.deb
+  tags:
+    - applications
+    - rustdesk
+
+- name: Ensure the RustDesk system service is enabled and started
+  ansible.builtin.systemd:
+    name: rustdesk
+    enabled: true
+    state: started
+    daemon_reload: true
+  tags:
+    - applications
+    - rustdesk
