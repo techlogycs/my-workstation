@@ -146,6 +146,7 @@ Las herramientas de escritorio GNOME se comportan así:
 - Home Manager se activa construyendo el paquete de activación desde el flake del sistema detectado, lo que evita depender de una arquitectura fija o de una instalación previa del ejecutable `home-manager` en el host.
 - Home Manager también instala un timer de usuario que limpia periódicamente ficheros antiguos en `~/Downloads` y `~/.cache`, para limitar acumulación de descargas y cachés efímeras sin tocar archivos recientes.
 - Home Manager también instala wrappers `npm` y `npx` en `~/.local/bin` para que Bun pueda actuar como sustituto por defecto de `npm` y `npx` en la shell del usuario.
+- GitHub Copilot CLI se instala mediante el paquete oficial `@github/copilot` usando el `npm` real de Node.js durante la activación de Home Manager, evitando depender del derivation unfree de Nix.
 
 ## Ajustes que probablemente querrás personalizar
 

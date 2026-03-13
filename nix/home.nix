@@ -71,6 +71,17 @@ let
     #!/usr/bin/env bash
     exec ${lib.getExe pkgs.bun} "$@"
   '';
+
+  copilotCliInstallScript = pkgs.writeShellApplication {
+    name = "install-copilot-cli";
+    runtimeInputs = with pkgs; [ nodejs_24 ];
+    text = ''
+      set -Eeuo pipefail
+
+      npm --prefix "$HOME/.local" list -g @github/copilot --depth=0 >/dev/null 2>&1 || \
+        npm install -g --prefix "$HOME/.local" @github/copilot
+    '';
+  };
 in
 {
   home = {
@@ -78,9 +89,8 @@ in
     stateVersion = "25.05";
   };
 
-  # Enable Home Manager and configure backup behavior for existing dotfiles.
+  # Enable Home Manager; conflicting shell dotfiles are backed up by Ansible.
   programs.home-manager.enable = true;
-  home-manager.backupFileExtension = "backup";
 
   # Zsh is configured declaratively so shell behaviour is reproducible and does
   # not depend on post-install curl/bash bootstrap scripts.
@@ -97,6 +107,7 @@ in
     };
     shellAliases = {
       ll = "ls -lah";
+      copilot = "${homeDirectory}/.local/bin/copilot";
       cargo-release = "CARGO_INCREMENTAL=0 RUSTFLAGS='-C target-cpu=native -C codegen-units=1' cargo build --release";
       go-release = "GOMAXPROCS=$(nproc) go build ./...";
       npm = "bun";
@@ -108,7 +119,6 @@ in
 
   home.packages = with pkgs; [
     bun
-    github-copilot-cli
     nodejs_24
     uv
     warp-terminal
@@ -158,6 +168,12 @@ in
       "$HOME/.local/share/cargo" \
       "$HOME/.local/share/go" \
       "$HOME/.local/bin"
+  '';
+
+  home.activation.installCopilotCli = lib.hm.dag.entryAfter [ "createBuildCaches" ] ''
+    if [[ -z "''${DRY_RUN:-}" ]]; then
+      ${copilotCliInstallScript}/bin/install-copilot-cli
+    fi
   '';
 
   systemd.user.services.workstation-auto-clean = {
