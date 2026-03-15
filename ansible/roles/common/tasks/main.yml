@@ -122,6 +122,11 @@
     - name: Derive host package and platform facts
       ansible.builtin.set_fact:
         common_deb_arch: "{{ deb_arch_map.get(ansible_architecture, 'amd64') }}"
+        common_ubuntu_codename: >-
+          {{
+            ansible_lsb.codename
+            | default(ansible_distribution_release, true)
+          }}
         common_host_nix_system: "{{ nix_system_map.get(ansible_architecture, 'x86_64-linux') }}"
         common_home_manager_activation_link: "{{ local_home }}/.cache/home-manager-activation"
         common_has_gnome_desktop: >-

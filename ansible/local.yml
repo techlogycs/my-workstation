@@ -9,16 +9,16 @@
       tags:
         - always
         - facts
-    - role: system
-      tags:
-        - system
-        - packages
-        - shell
     - role: apt_repositories
       tags:
         - repos
         - vscode
         - brave
+    - role: system
+      tags:
+        - system
+        - packages
+        - shell
     - role: desktop_apps
       tags:
         - applications

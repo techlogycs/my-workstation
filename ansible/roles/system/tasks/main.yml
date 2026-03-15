@@ -17,26 +17,6 @@
     - packages
     - system
 
-- name: Add Microsoft GPG key for Edge repository
-  ansible.builtin.apt_key:
-    url: https://packages.microsoft.com/keys/microsoft.asc
-    state: present
-  when: common_enable_edge
-  tags:
-    - packages
-    - system
-
-- name: Add Microsoft Edge APT repository
-  ansible.builtin.apt_repository:
-    repo: "deb [arch=amd64] https://packages.microsoft.com/repos/edge stable main"
-    state: present
-    filename: microsoft-edge-stable
-    update_cache: true
-  when: common_enable_edge
-  tags:
-    - packages
-    - system
-
 - name: Install baseline APT packages
   ansible.builtin.apt:
     name: >-
@@ -111,8 +91,6 @@
   ansible.builtin.user:
     name: "{{ local_user }}"
     shell: /usr/bin/zsh
-    groups: "{{ 'docker' if common_enable_docker else omit }}"
-    append: true
   tags:
     - shell
     - system

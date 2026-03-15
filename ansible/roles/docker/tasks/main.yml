@@ -57,6 +57,23 @@
   tags:
     - docker
 
+- name: Ensure the docker group exists
+  ansible.builtin.group:
+    name: docker
+    state: present
+  when: common_enable_docker | default(false)
+  tags:
+    - docker
+
+- name: Ensure the target user can run Docker without sudo
+  ansible.builtin.user:
+    name: "{{ local_user }}"
+    groups: docker
+    append: true
+  when: common_enable_docker | default(false)
+  tags:
+    - docker
+
 - name: Ensure Docker service is enabled and running
   ansible.builtin.service:
     name: docker
