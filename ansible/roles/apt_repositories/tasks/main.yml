@@ -108,10 +108,26 @@
     - repos
     - copyq
 
+- name: Register the Git Core PPA repository
+  ansible.builtin.apt_repository:
+    repo: ppa:git-core/ppa
+    state: present
+    update_cache: false
+  when: ansible_distribution in supported_distributions
+  tags:
+    - repos
+    - git
+
 - name: Update apt cache after adding external repositories
   ansible.builtin.apt:
     update_cache: true
-  when: common_enable_vscode or common_enable_brave or common_enable_docker or common_enable_edge or common_install_copyq
+  when: >-
+    common_enable_vscode
+    or common_enable_brave
+    or common_enable_docker
+    or common_enable_edge
+    or common_install_copyq
+    or ansible_distribution in supported_distributions
   changed_when: false
   tags:
     - repos

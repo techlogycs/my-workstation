@@ -52,6 +52,7 @@
     marker: "# {mark} ANSIBLE MANAGED BLOCK: git-credential-oauth"
     block: |
       [credential]
+        helper = cache --timeout 21600
         helper = oauth
     create: true
     mode: "0644"

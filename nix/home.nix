@@ -62,8 +62,12 @@ let
               local binary="$1"
               shift
 
-              if command -v "$binary" >/dev/null 2>&1; then
-                "$@"
+              if ! command -v "$binary" >/dev/null 2>&1; then
+                return 0
+              fi
+
+              if ! "$@"; then
+                printf 'Skipping failed cleanup command: %s\n' "$*" >&2
               fi
             }
 
@@ -174,6 +178,7 @@ in
     bun
     dust
     nodejs_24
+    ripgrep
     uv
     warp-terminal
   ];

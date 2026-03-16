@@ -69,6 +69,7 @@ apt_base_packages:
   - desktop-file-utils
   - git
   - gnupg
+  - ripgrep
   - software-properties-common
   - zsh
 distro_desktop_packages:
