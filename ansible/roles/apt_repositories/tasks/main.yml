@@ -98,10 +98,20 @@
     - repos
     - docker
 
+- name: Register the CopyQ PPA repository
+  ansible.builtin.apt_repository:
+    repo: ppa:hluk/copyq
+    state: present
+    update_cache: false
+  when: common_install_copyq
+  tags:
+    - repos
+    - copyq
+
 - name: Update apt cache after adding external repositories
   ansible.builtin.apt:
     update_cache: true
-  when: common_enable_vscode or common_enable_brave or common_enable_docker or common_enable_edge
+  when: common_enable_vscode or common_enable_brave or common_enable_docker or common_enable_edge or common_install_copyq
   changed_when: false
   tags:
     - repos

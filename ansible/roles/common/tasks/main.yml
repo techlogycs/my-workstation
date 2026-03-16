@@ -18,6 +18,12 @@
             else 'disabled' if feature_flags.desktop_tools == false
             else feature_flags.desktop_tools
           }}
+        common_feature_mode_clip_win: >-
+          {{
+            'enabled' if feature_flags.clip_win == true
+            else 'disabled' if feature_flags.clip_win == false
+            else feature_flags.clip_win
+          }}
         common_feature_mode_copyq: >-
           {{
             'enabled' if feature_flags.copyq == true
@@ -95,6 +101,7 @@
       ansible.builtin.assert:
         that:
           - common_feature_mode_desktop_tools in ['enabled', 'disabled', 'auto']
+          - common_feature_mode_clip_win in ['enabled', 'disabled', 'auto']
           - common_feature_mode_copyq in ['enabled', 'disabled', 'auto']
           - common_feature_mode_office_suite in ['enabled', 'disabled', 'auto']
           - common_feature_mode_vscode in ['enabled', 'disabled', 'auto']
@@ -149,6 +156,31 @@
             | select('in', ansible_facts.packages.keys() | list)
             | list
           }}
+        common_clipboard_manager_missing: >-
+          {{
+            (
+              clipboard_manager_package_candidates
+              | select('in', ansible_facts.packages.keys() | list)
+              | list
+              | length
+            ) == 0
+          }}
+        common_current_desktop: >-
+          {{
+            (
+              lookup('ansible.builtin.env', 'XDG_CURRENT_DESKTOP')
+              ~ ' '
+              ~ lookup('ansible.builtin.env', 'XDG_SESSION_DESKTOP')
+            )
+            | lower
+            | trim
+          }}
+
+    - name: Derive Clip-Win release facts
+      ansible.builtin.set_fact:
+        common_clip_win_deb_checksum: "{{ clip_win_release_deb_checksums.get(common_deb_arch, '') }}"
+        common_clip_win_deb_url: >-
+          https://github.com/techlogycs/clip-win/releases/download/v{{ clip_win_version }}/clip-win_{{ clip_win_version }}_{{ common_deb_arch }}.deb
 
     - name: Derive nix flake reference
       ansible.builtin.set_fact:
@@ -188,17 +220,29 @@
             )
             else []
           }}
+        common_install_clip_win: >-
+          {{
+            common_feature_mode_clip_win == 'enabled'
+            or (
+              common_feature_mode_clip_win == 'auto'
+              and common_clipboard_manager_missing
+            )
+          }}
         common_install_copyq: >-
           {{
-            common_feature_mode_copyq == 'enabled'
-            or (
-              common_feature_mode_copyq == 'auto'
-              and (
-                clipboard_manager_package_candidates
-                | select('in', ansible_facts.packages.keys() | list)
-                | list
-                | length
-              ) == 0
+            (
+              common_feature_mode_copyq == 'enabled'
+              or (
+                common_feature_mode_copyq == 'auto'
+                and common_clipboard_manager_missing
+              )
+            )
+            and not (
+              common_feature_mode_clip_win == 'enabled'
+              or (
+                common_feature_mode_clip_win == 'auto'
+                and common_clipboard_manager_missing
+              )
             )
           }}
         common_install_libreoffice: >-
@@ -233,3 +277,10 @@
             and (vscode_file_manager_integration == 'desktop-entry'
               or (vscode_file_manager_integration == 'auto' and 'nautilus' not in ansible_facts.packages))
           }}
+        common_clip_win_is_gnome_family: >-
+          {{
+            'gnome' in common_current_desktop
+            or 'unity' in common_current_desktop
+            or 'pop' in common_current_desktop
+          }}
+        common_clip_win_is_cosmic: "{{ 'cosmic' in common_current_desktop }}"

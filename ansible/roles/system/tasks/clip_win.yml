@@ -1,0 +1,225 @@
+---
+- name: Remove legacy CopyQ packages when migrating to Clip-Win
+  ansible.builtin.apt:
+    name:
+      - copyq
+      - copyq-plugins
+    state: absent
+    purge: true
+    autoremove: true
+  tags:
+    - clip-win
+    - copyq
+
+- name: Remove legacy CopyQ config directory when migrating to Clip-Win
+  ansible.builtin.file:
+    path: "{{ local_home }}/.config/copyq"
+    state: absent
+  become: false
+  tags:
+    - clip-win
+    - copyq
+
+- name: Download pinned Clip-Win release package
+  ansible.builtin.get_url:
+    url: "{{ common_clip_win_deb_url }}"
+    dest: "/tmp/clip-win_{{ clip_win_version }}_{{ common_deb_arch }}.deb"
+    mode: "0644"
+    checksum: "{{ common_clip_win_deb_checksum }}"
+  tags:
+    - clip-win
+
+- name: Install Clip-Win from the pinned GitHub release
+  ansible.builtin.apt:
+    deb: "/tmp/clip-win_{{ clip_win_version }}_{{ common_deb_arch }}.deb"
+    state: present
+  tags:
+    - clip-win
+
+- name: Ensure Clip-Win config directory exists
+  ansible.builtin.file:
+    path: "{{ local_home }}/.config/clip-win"
+    state: directory
+    mode: "0700"
+  become: false
+  tags:
+    - clip-win
+
+- name: Create the Clip-Win first-run sentinel file
+  ansible.builtin.copy:
+    dest: "{{ local_home }}/.config/clip-win/setup.json"
+    content: |
+      {"setupComplete":true,"setupDate":"{{ ansible_date_time.iso8601 }}"}
+    mode: "0600"
+  become: false
+  tags:
+    - clip-win
+
+- name: Ensure autostart directory exists for Clip-Win
+  ansible.builtin.file:
+    path: "{{ local_home }}/.config/autostart"
+    state: directory
+    mode: "0700"
+  become: false
+  tags:
+    - clip-win
+
+- name: Ensure Clip-Win autostarts in background
+  ansible.builtin.copy:
+    dest: "{{ local_home }}/.config/autostart/clip-win.desktop"
+    mode: "0644"
+    content: |
+      [Desktop Entry]
+      Type=Application
+      Version=1.1
+      Name=Clipboard History
+      GenericName=Clipboard Manager
+      Comment=Clip-Win History Manager
+      Exec=sh -c "sleep 5 && '/usr/bin/clip-win' --background"
+      Icon=clip-win
+      Terminal=false
+      Categories=Utility;
+      StartupNotify=false
+      X-GNOME-Autostart-enabled=true
+  become: false
+  tags:
+    - clip-win
+
+- name: Check whether /dev/uinput is available
+  ansible.builtin.stat:
+    path: /dev/uinput
+  register: clip_win_uinput_device
+  tags:
+    - clip-win
+
+- name: Grant immediate /dev/uinput access to the target user for Clip-Win
+  ansible.builtin.command:
+    argv:
+      - setfacl
+      - -m
+      - "u:{{ local_user }}:rw"
+      - /dev/uinput
+  when: clip_win_uinput_device.stat.exists
+  changed_when: false
+  tags:
+    - clip-win
+
+- name: Ensure COSMIC shortcut config directory exists for Clip-Win
+  ansible.builtin.file:
+    path: "{{ local_home }}/.config/cosmic/com.system76.CosmicSettings.Shortcuts/v1"
+    state: directory
+    mode: "0700"
+  when: common_clip_win_is_cosmic
+  become: false
+  tags:
+    - clip-win
+
+- name: Ensure Clip-Win Super+V shortcut is present for COSMIC
+  ansible.builtin.shell: |
+    set -eu
+    shortcut_file="{{ local_home }}/.config/cosmic/com.system76.CosmicSettings.Shortcuts/v1/custom"
+    entry='    (
+        modifiers: [
+            Super,
+        ],
+        key: "v",
+        description: Some("Clipboard History"),
+    ): Spawn("clip-win"),'
+    if [ ! -f "$shortcut_file" ] || [ ! -s "$shortcut_file" ]; then
+      printf '{\n%s\n}\n' "$entry" > "$shortcut_file"
+      exit 0
+    fi
+    if grep -Fq 'Spawn("clip-win")' "$shortcut_file"; then
+      exit 0
+    fi
+    tmp_file="$(mktemp)"
+    awk -v entry="$entry" '
+      /}[[:space:]]*$/ && !done { print entry; done=1 }
+      { print }
+      END {
+        if (!done) {
+          print "{";
+          print entry;
+          print "}";
+        }
+      }
+    ' "$shortcut_file" > "$tmp_file"
+    mv "$tmp_file" "$shortcut_file"
+  args:
+    executable: /bin/bash
+  when: common_clip_win_is_cosmic
+  become: false
+  changed_when: false
+  tags:
+    - clip-win
+
+- name: Ensure GNOME notification center no longer claims Super+V
+  ansible.builtin.command:
+    argv:
+      - gsettings
+      - set
+      - org.gnome.shell.keybindings
+      - toggle-message-tray
+      - "['<Super><Shift>v']"
+  environment:
+    DBUS_SESSION_BUS_ADDRESS: "{{ lookup('ansible.builtin.env', 'DBUS_SESSION_BUS_ADDRESS') }}"
+    DISPLAY: "{{ lookup('ansible.builtin.env', 'DISPLAY') }}"
+    XDG_RUNTIME_DIR: "{{ lookup('ansible.builtin.env', 'XDG_RUNTIME_DIR') }}"
+  when:
+    - common_clip_win_is_gnome_family
+    - lookup('ansible.builtin.env', 'DBUS_SESSION_BUS_ADDRESS') | length > 0
+  become: false
+  changed_when: false
+  tags:
+    - clip-win
+
+- name: Ensure GNOME quick settings no longer claims Super+V
+  ansible.builtin.command:
+    argv:
+      - gsettings
+      - set
+      - org.gnome.shell.keybindings
+      - toggle-quick-settings
+      - "[]"
+  environment:
+    DBUS_SESSION_BUS_ADDRESS: "{{ lookup('ansible.builtin.env', 'DBUS_SESSION_BUS_ADDRESS') }}"
+    DISPLAY: "{{ lookup('ansible.builtin.env', 'DISPLAY') }}"
+    XDG_RUNTIME_DIR: "{{ lookup('ansible.builtin.env', 'XDG_RUNTIME_DIR') }}"
+  when:
+    - common_clip_win_is_gnome_family
+    - lookup('ansible.builtin.env', 'DBUS_SESSION_BUS_ADDRESS') | length > 0
+  become: false
+  changed_when: false
+  tags:
+    - clip-win
+
+- name: Ensure Clip-Win GNOME custom shortcut is registered
+  ansible.builtin.shell: |
+    set -eu
+    entry='/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/clip-win/'
+    current="$(gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings)"
+    if [[ "$current" == "@as []" || "$current" == "[]" ]]; then
+      new_list="['$entry']"
+    elif [[ "$current" == *"$entry"* ]]; then
+      new_list="$current"
+    else
+      new_list="${current%]}"
+      new_list+=" , '$entry']"
+    fi
+    gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "$new_list"
+    gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/clip-win/ name 'Clipboard History'
+    gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/clip-win/ command 'clip-win'
+    gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/clip-win/ binding '<Super>v'
+  args:
+    executable: /bin/bash
+  environment:
+    DBUS_SESSION_BUS_ADDRESS: "{{ lookup('ansible.builtin.env', 'DBUS_SESSION_BUS_ADDRESS') }}"
+    DISPLAY: "{{ lookup('ansible.builtin.env', 'DISPLAY') }}"
+    XDG_RUNTIME_DIR: "{{ lookup('ansible.builtin.env', 'XDG_RUNTIME_DIR') }}"
+  when:
+    - common_clip_win_is_gnome_family
+    - lookup('ansible.builtin.env', 'DBUS_SESSION_BUS_ADDRESS') | length > 0
+  become: false
+  changed_when: false
+  tags:
+    - clip-win

@@ -108,7 +108,8 @@ Los componentes opcionales están controlados desde `ansible/group_vars/all/main
 - `feature_flags.vscode`, `feature_flags.brave`, `feature_flags.docker`, `feature_flags.nix` y `feature_flags.git_credential_oauth` usan `enabled` por defecto. Hoy en día `auto` se resuelve igual que `enabled` para esos componentes, porque no hay una detección de alternativa equivalente.
 - `feature_flags.thunderbird` usa `disabled` por defecto; cuando lo activas, instala `org.mozilla.Thunderbird` vía Flatpak.
 - `feature_flags.desktop_tools` usa `auto` por defecto y solo instala tooling específico de escritorio cuando detecta una base compatible.
-- `feature_flags.copyq` usa `auto` por defecto y solo instala CopyQ si no detecta otro gestor de portapapeles ya instalado.
+- `feature_flags.clip_win` usa `auto` por defecto y convierte `clip-win` en el gestor de portapapeles preferido cuando no detecta otro ya instalado.
+- `feature_flags.copyq` queda como vía legacy y usa `disabled` por defecto; solo conviene activarlo explícitamente si quieres seguir en CopyQ.
 - `feature_flags.office_suite` usa `auto` por defecto y solo instala LibreOffice si no detecta otra suite ofimática ya instalada.
 - `feature_flags.file_manager_integration` usa `auto` por defecto y solo habilita la integración si VS Code también está habilitado.
 - `feature_flags.git_credential_oauth` instala `git-credential-oauth` desde Ubuntu y configura `credential.helper=oauth` para el usuario objetivo.
@@ -116,7 +117,8 @@ Los componentes opcionales están controlados desde `ansible/group_vars/all/main
 - `rustdesk_version` fija la versión de RustDesk que se descarga como paquete `.deb`.
 - `rustdesk_release_arch_map` traduce la arquitectura Debian detectada al sufijo usado por los artefactos oficiales de RustDesk.
 - `supported_distributions`, `deb_arch_map` y `nix_system_map` convierten facts de Ansible en valores utilizables para APT y Nix en Ubuntu y Pop!_OS, incluyendo hosts ARM64.
-- `clipboard_manager_package_candidates` define qué paquetes cuentan como gestor de portapapeles existente a efectos del modo `auto` de CopyQ.
+- `clipboard_manager_package_candidates` define qué paquetes cuentan como gestor de portapapeles existente a efectos del modo `auto` de `clip-win` y CopyQ.
+- `clip_win_version` y `clip_win_release_deb_checksums` fijan la release pública de `techlogycs/clip-win` que se instala de forma reproducible desde GitHub Releases.
 - `office_suite_package_candidates` define qué paquetes cuentan como suite ofimática existente a efectos del modo `auto` de LibreOffice.
 - `gnome_desktop_package_candidates` define qué paquetes se consideran evidencia de una sesión GNOME; `gnome-tweaks` solo se añade cuando esa base existe.
 - `vscode_file_manager_integration` acepta `auto`, `nautilus`, `desktop-entry` o `disabled`.
@@ -126,10 +128,16 @@ El modo `auto` se comporta así:
 - Si `nautilus` aparece en los facts de paquetes, crea el script en `~/.local/share/nautilus/scripts/Open in Code`.
 - Si `nautilus` no está instalado, crea `~/.local/share/applications/code-open-here.desktop` como alternativa genérica basada en desktop entry. Esto evita asumir GNOME en Pop!_OS, pero no garantiza un menú contextual nativo en gestores como COSMIC Files.
 
-El modo `auto` de CopyQ se comporta así:
+El modo `auto` de `clip-win` se comporta así:
+
+- Si ya está instalado `clip-win`, `copyq` u otro gestor de portapapeles conocido como `gpaste`, `klipper`, `diodon`, `cliphist`, `clipman`, `xfce4-clipman` o un applet de portapapeles para COSMIC, no instala nada adicional.
+- Si no detecta ninguno, descarga e instala el `.deb` público fijado de `techlogycs/clip-win`, crea el fichero `~/.config/clip-win/setup.json` que upstream usa como sentinel de first-run, crea autostart y aprovisiona el acceso a `/dev/uinput`.
+- En COSMIC además precrea la entrada de `Super+V` en el fichero de shortcuts con el mismo formato RON que usa `clip-win`; en GNOME/Pop!_OS intenta registrar el custom shortcut vía `gsettings` y libera tanto `toggle-message-tray` como `toggle-quick-settings` cuando hay una sesión DBus disponible.
+
+El modo legacy de CopyQ se comporta así:
 
 - Si ya está instalado `copyq` o algún gestor de portapapeles conocido como `gpaste`, `klipper`, `diodon`, `cliphist`, `clipman`, `xfce4-clipman` o un applet de portapapeles para COSMIC, no instala nada adicional.
-- Si no detecta ninguno, añade `copyq` al conjunto de paquetes base.
+- Si no detecta ninguno y `feature_flags.clip_win` está en `disabled`, añade `copyq` al conjunto de paquetes base.
 
 En Pop!_OS 24.04 LTS con COSMIC, System76 no anuncia todavía un historial de portapapeles integrado por defecto en la release actual. Sí aparece como trabajo planificado en el roadmap oficial de COSMIC Epoch 2 bajo “COSMIC Clipboard Manager”, así que la detección `auto` contempla también nombres de paquetes plausibles del ecosistema COSMIC para evitar instalar CopyQ encima cuando esa pieza ya exista en el sistema.
 

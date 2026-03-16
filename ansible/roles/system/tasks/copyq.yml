@@ -5,15 +5,16 @@
     state: directory
     mode: "0700"
   when: common_install_copyq
+  become: false
   tags:
     - copyq
 
-- name: Install CopyQ config with Win+V shortcut
+- name: Ensure CopyQ commands init
   ansible.builtin.copy:
-    src: "{{ dotfiles_repo }}/dotfiles/copyq.conf"
-    dest: "{{ local_home }}/.config/copyq/copyq.conf"
+    src: "copyq-commands.ini"
+    dest: "{{ local_home }}/.config/copyq/copyq-commands.ini"
     mode: "0600"
-    owner: "{{ local_user }}"
   when: common_install_copyq
+  become: false
   tags:
     - copyq

@@ -23,7 +23,8 @@
       {{
         apt_base_packages
         + common_apt_desktop_packages
-        + ([ 'copyq' ] if common_install_copyq else [])
+        + ([ 'acl', 'wl-clipboard', 'xclip' ] if common_install_clip_win else [])
+        + ([ 'copyq', 'copyq-plugins' ] if common_install_copyq else [])
         + ([ 'libreoffice' ] if common_install_libreoffice else [])
         + ([ 'firefox' ] if common_enable_firefox else [])
         + ([ 'microsoft-edge-stable' ] if common_enable_edge else [])
@@ -61,14 +62,14 @@
     - packages
     - system
 
-- name: Report when CopyQ auto mode defers to an existing clipboard manager
+- name: Report when Clip-Win auto mode defers to an existing clipboard manager
   ansible.builtin.debug:
     msg: >-
-      Skipping CopyQ because the system already has a clipboard manager installed:
+      Skipping Clip-Win because the system already has a clipboard manager installed:
       {{ common_installed_clipboard_managers | join(', ') }}.
   when:
-    - common_feature_mode_copyq == 'auto'
-    - not common_install_copyq
+    - common_feature_mode_clip_win == 'auto'
+    - not common_install_clip_win
   changed_when: false
   tags:
     - packages
@@ -95,7 +96,14 @@
     - shell
     - system
 
-# CopyQ config setup (Win+V shortcut)
+# Clip-Win install and setup
+- name: Include Clip-Win setup tasks
+  ansible.builtin.import_tasks: clip_win.yml
+  when: common_install_clip_win
+  tags:
+    - clip-win
+
+# CopyQ legacy config setup (Win+V shortcut)
 - name: Include CopyQ config tasks
   ansible.builtin.import_tasks: copyq.yml
   when: common_install_copyq
