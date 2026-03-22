@@ -28,7 +28,6 @@
         + ([ 'libreoffice' ] if common_install_libreoffice else [])
         + ([ 'firefox' ] if common_enable_firefox else [])
         + ([ 'microsoft-edge-stable' ] if common_enable_edge else [])
-        + ([ 'git-credential-oauth' ] if common_enable_git_credential_oauth else [])
         + ([
             'docker-ce',
             'docker-ce-cli',
@@ -46,14 +45,59 @@
     - packages
     - system
 
-- name: Configure git-credential-oauth as the global Git credential helper
+- name: Ensure Git Credential Manager native packages are available for this architecture
+  ansible.builtin.assert:
+    that:
+      - common_gcm_release_arch | length > 0
+      - common_gcm_deb_checksum | length > 0
+    fail_msg: Git Credential Manager publishes Debian packages only for amd64 and arm64.
+  when: common_enable_git_credential_oauth
+  tags:
+    - packages
+    - system
+    - git
+
+- name: Remove git-credential-oauth after migrating to Git Credential Manager
+  ansible.builtin.apt:
+    name: git-credential-oauth
+    state: absent
+    purge: true
+    autoremove: true
+  when: common_enable_git_credential_oauth
+  tags:
+    - packages
+    - system
+    - git
+
+- name: Download the pinned Git Credential Manager Debian package
+  ansible.builtin.get_url:
+    url: "{{ common_gcm_deb_url }}"
+    dest: "/tmp/{{ common_gcm_package_filename }}"
+    mode: "0644"
+    force: false
+    checksum: "{{ common_gcm_deb_checksum }}"
+  when: common_enable_git_credential_oauth
+  tags:
+    - packages
+    - system
+    - git
+
+- name: Install Git Credential Manager from the pinned upstream Debian package
+  ansible.builtin.apt:
+    deb: "/tmp/{{ common_gcm_package_filename }}"
+    state: present
+    update_cache: true
+  when: common_enable_git_credential_oauth
+  tags:
+    - packages
+    - system
+    - git
+
+- name: Remove the legacy git-credential-oauth managed Git config block
   ansible.builtin.blockinfile:
     path: "{{ local_home }}/.gitconfig"
     marker: "# {mark} ANSIBLE MANAGED BLOCK: git-credential-oauth"
-    block: |
-      [credential]
-        helper = cache --timeout 21600
-        helper = oauth
+    state: absent
     create: true
     mode: "0644"
   become: true
@@ -62,6 +106,26 @@
   tags:
     - packages
     - system
+    - git
+
+- name: Configure Git Credential Manager as the global Git credential helper
+  ansible.builtin.blockinfile:
+    path: "{{ local_home }}/.gitconfig"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK: git-credential-manager"
+    block: |
+      [credential]
+        helper =
+        helper = /usr/local/bin/git-credential-manager
+        credentialStore = secretservice
+    create: true
+    mode: "0644"
+  become: true
+  become_user: "{{ local_user }}"
+  when: common_enable_git_credential_oauth
+  tags:
+    - packages
+    - system
+    - git
 
 - name: Report when Clip-Win auto mode defers to an existing clipboard manager
   ansible.builtin.debug:

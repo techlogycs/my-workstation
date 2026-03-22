@@ -88,7 +88,7 @@
 - name: Check whether /dev/uinput is available
   ansible.builtin.stat:
     path: /dev/uinput
-  register: clip_win_uinput_device
+  register: system_clip_win_uinput_device
   tags:
     - clip-win
 
@@ -99,7 +99,7 @@
       - -m
       - "u:{{ local_user }}:rw"
       - /dev/uinput
-  when: clip_win_uinput_device.stat.exists
+  when: system_clip_win_uinput_device.stat.exists
   changed_when: false
   tags:
     - clip-win
@@ -207,9 +207,10 @@
       new_list+=" , '$entry']"
     fi
     gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "$new_list"
-    gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/clip-win/ name 'Clipboard History'
-    gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/clip-win/ command 'clip-win'
-    gsettings set org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/clip-win/ binding '<Super>v'
+    base_path='org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/clip-win/'
+    gsettings set "$base_path" name 'Clipboard History'
+    gsettings set "$base_path" command 'clip-win'
+    gsettings set "$base_path" binding '<Super>v'
   args:
     executable: /bin/bash
   environment:

@@ -63,6 +63,13 @@ office_suite_package_candidates:
   - calligra
   - abiword
   - gnumeric
+gcm_version: "2.7.3"
+gcm_release_arch_map:
+  amd64: x64
+  arm64: arm64
+gcm_release_deb_checksums:
+  amd64: "sha256:a5431e1b6f25aa8b424e747d880f86e74c739ad52e72c924a7b1a25d87ac7e72"
+  arm64: "sha256:f5995901ef3a2ffc4442e4a9a92c8dfdc8f1df1affe8ef1d037b7ad3302b923b"
 apt_base_packages:
   - ca-certificates
   - curl

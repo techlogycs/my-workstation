@@ -89,7 +89,9 @@
 
 - name: Register the Docker repository
   ansible.builtin.apt_repository:
-    repo: "deb [arch={{ common_deb_arch }}] https://download.docker.com/linux/ubuntu {{ common_ubuntu_codename }} stable"
+    repo: >-
+      deb [arch={{ common_deb_arch }}] https://download.docker.com/linux/ubuntu
+      {{ common_ubuntu_codename }} stable
     state: present
     filename: docker
     update_cache: false

@@ -112,8 +112,9 @@ Los componentes opcionales están controlados desde `ansible/group_vars/all/main
 - `feature_flags.copyq` queda como vía legacy y usa `disabled` por defecto; solo conviene activarlo explícitamente si quieres seguir en CopyQ.
 - `feature_flags.office_suite` usa `auto` por defecto y solo instala LibreOffice si no detecta otra suite ofimática ya instalada.
 - `feature_flags.file_manager_integration` usa `auto` por defecto y solo habilita la integración si VS Code también está habilitado.
-- `feature_flags.git_credential_oauth` instala `git-credential-oauth` desde Ubuntu y configura la cadena recomendada de helpers para Git (`credential.helper=cache --timeout 21600` seguido de `credential.helper=oauth`) para el usuario objetivo.
-- El playbook registra `ppa:git-core/ppa` en Ubuntu y Pop!_OS para instalar una versión upstream reciente de Git, necesaria para el mejor soporte de `git-credential-oauth`.
+- `feature_flags.git_credential_oauth` migra la autenticación HTTP(S) de Git a Git Credential Manager, instalado desde un `.deb` upstream fijado por versión y checksum para Ubuntu y Pop!_OS.
+- La configuración global de Git pasa a usar `credential.helper=/usr/local/bin/git-credential-manager` y `credential.credentialStore=secretservice`, de modo que los tokens quedan persistidos en el keyring del escritorio y sobreviven reinicios.
+- El playbook elimina `git-credential-oauth` y mantiene `ppa:git-core/ppa` en Ubuntu y Pop!_OS para instalar una versión upstream reciente de Git, compatible con Git Credential Manager.
 - `apt_base_packages` incluye `ripgrep`, y el entorno de Home Manager añade `ripgrep` para que el comando `rg` exista tanto en la capa del sistema como en la del usuario.
 - `distro_flatpak_apps` define las aplicaciones de escritorio vía Flatpak por distro, excluyendo RustDesk porque se instala de forma nativa.
 - `rustdesk_version` fija la versión de RustDesk que se descarga como paquete `.deb`.
