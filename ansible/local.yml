@@ -31,6 +31,10 @@
     - role: docker
       tags:
         - docker
+    - role: virt_manager
+      tags:
+        - virt-manager
+        - virtualization
     - role: file_manager
       tags:
         - file-manager

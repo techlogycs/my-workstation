@@ -28,6 +28,7 @@ dotfiles/
 │       ├── system/
 │       ├── apt_repositories/
 │       ├── desktop_apps/
+│       ├── virt_manager/
 │       ├── flatpak/
 │       ├── docker/
 │       ├── file_manager/
@@ -43,7 +44,7 @@ dotfiles/
 
 1. En el host Pop!_OS o Ubuntu real, ejecuta `./bootstrap.sh`.
 2. El script instala `git`, `curl` y `ansible` solo si faltan, clona el repositorio en `~/my-workstation` desde `https://github.com/techlogycs/my-workstation.git` por defecto si hace falta y lanza el playbook local.
-3. El playbook configura APT y, según los flags de `ansible/group_vars/all/main.yml`, instala VS Code, Brave, Docker, RustDesk nativo, Flatpak en Ubuntu y Pop!_OS, integración con el gestor de archivos y Nix.
+3. El playbook configura APT y, según los flags de `ansible/group_vars/all/main.yml`, instala VS Code, Brave, Docker, virt-manager con libvirt, RustDesk nativo, Flatpak en Ubuntu y Pop!_OS, integración con el gestor de archivos y Nix.
 4. Finalmente, Ansible construye y activa Home Manager desde el flake fijado en `nix/`.
 
 ## Roles y tags
@@ -54,6 +55,7 @@ El playbook usa roles pequeños y etiquetados para que puedas ejecutar solo una 
 - `system`: paquetes base, herramientas de escritorio y shell por defecto.
 - `apt_repositories`: repositorios y llaves APT de proveedores.
 - `desktop_apps`: instalación de VS Code, Brave y RustDesk nativo.
+- `virt_manager`: stack de virtualización local con libvirt y virt-manager.
 - `flatpak`: Flathub y aplicaciones Flatpak por distro.
 - `docker`: configuración de `daemon.json` y servicio.
 - `file_manager`: integración “Open in Code”.
@@ -63,6 +65,7 @@ Ejemplos:
 
 ```bash
 ansible-playbook ansible/local.yml --tags docker
+ansible-playbook ansible/local.yml --tags virt-manager
 ansible-playbook ansible/local.yml --tags nix,file-manager
 ./bootstrap.sh --tags system
 ```
@@ -106,6 +109,7 @@ Los componentes opcionales están controlados desde `ansible/group_vars/all/main
 
 - Todos los `feature_flags.*` aceptan `enabled`, `disabled` o `auto`. Los booleanos antiguos siguen funcionando porque se normalizan internamente a esos modos.
 - `feature_flags.vscode`, `feature_flags.brave`, `feature_flags.docker`, `feature_flags.nix` y `feature_flags.git_credential_oauth` usan `enabled` por defecto. Hoy en día `auto` se resuelve igual que `enabled` para esos componentes, porque no hay una detección de alternativa equivalente.
+- `feature_flags.virt_manager` usa `disabled` por defecto; cuando lo activas instala libvirt, QEMU y virt-manager, arranca `libvirtd`, añade el usuario objetivo a los grupos `libvirt` y `kvm`, y fija `qemu:///system` como URI por defecto de libvirt para la sesión de usuario.
 - `feature_flags.thunderbird` usa `disabled` por defecto; cuando lo activas, instala `org.mozilla.Thunderbird` vía Flatpak.
 - `feature_flags.desktop_tools` usa `auto` por defecto y solo instala tooling específico de escritorio cuando detecta una base compatible.
 - `feature_flags.clip_win` usa `auto` por defecto y convierte `clip-win` en el gestor de portapapeles preferido cuando no detecta otro ya instalado.
@@ -125,6 +129,13 @@ Los componentes opcionales están controlados desde `ansible/group_vars/all/main
 - `office_suite_package_candidates` define qué paquetes cuentan como suite ofimática existente a efectos del modo `auto` de LibreOffice.
 - `gnome_desktop_package_candidates` define qué paquetes se consideran evidencia de una sesión GNOME; `gnome-tweaks` solo se añade cuando esa base existe.
 - `vscode_file_manager_integration` acepta `auto`, `nautilus`, `desktop-entry` o `disabled`.
+- `virt_manager_packages` define los paquetes APT que componen el stack de virtualización local.
+- `virt_manager_default_uri` define la URI por defecto que usará virt-manager/libvirt en `~/.config/libvirt/libvirt.conf`.
+
+Para personalizar opciones sin tocar el baseline versionado:
+
+- Copia `ansible/group_vars/all/override.example` a `ansible/group_vars/all/override.yml`.
+- El archivo `override.yml` queda ignorado por Git y Ansible lo cargará automáticamente al ejecutar el playbook.
 
 El modo `auto` se comporta así:
 
@@ -174,6 +185,7 @@ Las herramientas de escritorio GNOME se comportan así:
 - La política `cleanupPolicy` en `nix/home.nix` si quieres cambiar la frecuencia o la antigüedad máxima de `Downloads`, los directorios explícitos con limpieza por antigüedad, o la limpieza nativa de `uv`, `direnv` y Nix.
 - `DOTFILES_EDITOR` si desactivas VS Code y quieres que `EDITOR` y `VISUAL` apunten a otro binario.
 - `rustdesk_version` en `ansible/group_vars/all/main.yml` si quieres fijar otra release oficial de RustDesk.
+- `feature_flags.virt_manager`, `virt_manager_packages` y `virt_manager_default_uri` si quieres ajustar el stack de virtualización local.
 - Los `feature_flags`, `distro_flatpak_apps` y el modo de integración del gestor de archivos en `ansible/group_vars/all/main.yml`.
 
 ## Nota sobre RustDesk

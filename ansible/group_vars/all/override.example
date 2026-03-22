@@ -1,0 +1,16 @@
+---
+# Copy this file to ansible/group_vars/all/override.yml to override defaults
+# without editing the tracked baseline in main.yml.
+
+feature_flags:
+  virt_manager: enabled
+
+# Optional virt-manager overrides.
+# virt_manager_packages:
+#   - qemu-kvm
+#   - libvirt-daemon-system
+#   - libvirt-clients
+#   - bridge-utils
+#   - virtinst
+#   - virt-manager
+# virt_manager_default_uri: qemu:///system

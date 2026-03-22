@@ -1,0 +1,24 @@
+/ansible/group_vars/all/override.yml
+
+# Local Ansible state
+/.ansible/
+*.retry
+
+# Local Nix outputs
+/result
+/result-*
+/nix/result
+/nix/result-*
+
+# Local shell environment state
+/.direnv/
+/.envrc.local
+
+# Editor swap and backup files
+*.swp
+*.swo
+*~
+
+# OS metadata
+.DS_Store
+Thumbs.db

@@ -29,6 +29,7 @@ feature_flags:
   firefox: disabled
   edge: disabled
   docker: enabled
+  virt_manager: disabled
   nix: enabled
   openvpn: disabled
   file_manager_integration: auto
@@ -107,6 +108,14 @@ clip_win_release_deb_checksums:
 rustdesk_release_arch_map:
   amd64: x86_64
   arm64: aarch64
+virt_manager_packages:
+  - qemu-kvm
+  - libvirt-daemon-system
+  - libvirt-clients
+  - bridge-utils
+  - virtinst
+  - virt-manager
+virt_manager_default_uri: qemu:///system
 docker_daemon_config:
   log-driver: json-file
   log-opts:

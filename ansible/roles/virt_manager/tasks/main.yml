@@ -1,0 +1,59 @@
+---
+- name: Install virt-manager and libvirt packages
+  ansible.builtin.apt:
+    name: "{{ virt_manager_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when: common_enable_virt_manager
+  tags:
+    - virt-manager
+    - virtualization
+
+- name: Ensure the libvirt daemon is enabled and started
+  ansible.builtin.systemd:
+    name: libvirtd
+    enabled: true
+    state: started
+  when: common_enable_virt_manager
+  tags:
+    - virt-manager
+    - virtualization
+
+- name: Ensure the target user can manage system virtual machines
+  ansible.builtin.user:
+    name: "{{ local_user }}"
+    groups: "{{ item }}"
+    append: true
+  loop:
+    - libvirt
+    - kvm
+  when: common_enable_virt_manager
+  tags:
+    - virt-manager
+    - virtualization
+
+- name: Ensure the libvirt user configuration directory exists
+  ansible.builtin.file:
+    path: "{{ local_home }}/.config/libvirt"
+    state: directory
+    mode: "0755"
+  become: true
+  become_user: "{{ local_user }}"
+  when: common_enable_virt_manager
+  tags:
+    - virt-manager
+    - virtualization
+
+- name: Configure the default libvirt URI for virt-manager
+  ansible.builtin.copy:
+    dest: "{{ local_home }}/.config/libvirt/libvirt.conf"
+    content: |
+      uri_default = "{{ virt_manager_default_uri }}"
+    mode: "0644"
+  become: true
+  become_user: "{{ local_user }}"
+  when: common_enable_virt_manager
+  tags:
+    - virt-manager
+    - virtualization

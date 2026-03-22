@@ -90,6 +90,12 @@
             else 'disabled' if feature_flags.edge == false
             else feature_flags.edge
           }}
+        common_feature_mode_virt_manager: >-
+          {{
+            'enabled' if feature_flags.virt_manager == true
+            else 'disabled' if feature_flags.virt_manager == false
+            else feature_flags.virt_manager
+          }}
         common_feature_mode_file_manager_integration: >-
           {{
             'enabled' if feature_flags.file_manager_integration == true
@@ -113,6 +119,7 @@
           - common_feature_mode_git_credential_oauth in ['enabled', 'disabled', 'auto']
           - common_feature_mode_firefox in ['enabled', 'disabled', 'auto']
           - common_feature_mode_edge in ['enabled', 'disabled', 'auto']
+          - common_feature_mode_virt_manager in ['enabled', 'disabled', 'auto']
           - common_feature_mode_file_manager_integration in ['enabled', 'disabled', 'auto']
         fail_msg: All feature_flags values must be enabled, disabled, or auto.
 
@@ -215,6 +222,7 @@
         common_enable_git_credential_oauth: "{{ common_feature_mode_git_credential_oauth != 'disabled' }}"
         common_enable_firefox: "{{ common_feature_mode_firefox != 'disabled' }}"
         common_enable_edge: "{{ common_feature_mode_edge != 'disabled' }}"
+        common_enable_virt_manager: "{{ common_feature_mode_virt_manager != 'disabled' }}"
         common_flatpak_apps: >-
           {{
             distro_flatpak_apps.get(ansible_distribution, [])
