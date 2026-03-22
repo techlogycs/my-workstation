@@ -1,7 +1,8 @@
-.PHONY: lint lint-ansible lint-nix format format-ansible format-nix check-ansible-tools check-nix-tools
+.PHONY: lint lint-ansible lint-nix format format-ansible format-nix check-ansible-tools check-nix-tools bootstrap ansible-requirements
 
 NIX_DIR := ./nix
 ANSIBLE_DIR := ansible
+ANSIBLE_REQUIREMENTS_FILE := $(ANSIBLE_DIR)/requirements.yml
 DOTFILES_USER ?= $(shell id -un)
 DOTFILES_HOME ?= $(HOME)
 NIX_SYSTEM ?= $(shell nix eval --impure --raw --expr builtins.currentSystem)
@@ -12,6 +13,14 @@ endef
 
 lint: lint-ansible lint-nix
 
+bootstrap:
+	@echo "Running bootstrap script..."
+	@bash ./bootstrap.sh
+
+ansible-requirements:
+	$(call require_command,ansible-galaxy)
+	ansible-galaxy collection install -r $(ANSIBLE_REQUIREMENTS_FILE)
+
 check-ansible-tools:
 	$(call require_command,ansible-playbook)
 	$(call require_command,ansible-lint)
@@ -20,6 +29,12 @@ check-ansible-tools:
 check-nix-tools:
 	$(call require_command,nix)
 	$(call require_command,statix)
+
+ansible-tags ?= all
+
+playbook:
+	@$(MAKE) check-ansible-tools
+	ansible-playbook $(ANSIBLE_DIR)/local.yml --tags "$(ansible-tags)"
 
 lint-ansible:
 	@$(MAKE) check-ansible-tools
@@ -41,3 +56,4 @@ format-ansible:
 format-nix:
 	@$(MAKE) check-nix-tools
 	cd $(NIX_DIR) && nix fmt .
+
