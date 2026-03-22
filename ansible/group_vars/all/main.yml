@@ -17,7 +17,8 @@ nix_system_map:
   amd64: x86_64-linux
   # aarch64: aarch64-linux
   arm64: aarch64-linux
-feature_flags:
+# Baseline defaults. Local overrides can define only the keys they need in override.yml.
+feature_flags_defaults:
   desktop_tools: auto
   clip_win: auto
   copyq: disabled

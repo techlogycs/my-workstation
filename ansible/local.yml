@@ -42,3 +42,8 @@
     - role: nix
       tags:
         - nix
+
+  post_tasks:
+    - name: Notify user session restart requirement
+      ansible.builtin.debug:
+        msg: "Some tools like docker require user session restart to avoid permissions issues"

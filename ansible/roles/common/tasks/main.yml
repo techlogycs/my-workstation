@@ -10,97 +10,102 @@
           - ansible_distribution in supported_distributions
         fail_msg: This repository targets Pop!_OS and other Ubuntu-derived hosts.
 
+    - name: Merge feature flag overrides with defaults
+      ansible.builtin.set_fact:
+        common_feature_flags: >-
+          {{ feature_flags_defaults | combine(feature_flags | default({}), recursive=True) }}
+
     - name: Normalize feature flags to string modes
       ansible.builtin.set_fact:
         common_feature_mode_desktop_tools: >-
           {{
-            'enabled' if feature_flags.desktop_tools == true
-            else 'disabled' if feature_flags.desktop_tools == false
-            else feature_flags.desktop_tools
+            'enabled' if common_feature_flags.desktop_tools == true
+            else 'disabled' if common_feature_flags.desktop_tools == false
+            else common_feature_flags.desktop_tools
           }}
         common_feature_mode_clip_win: >-
           {{
-            'enabled' if feature_flags.clip_win == true
-            else 'disabled' if feature_flags.clip_win == false
-            else feature_flags.clip_win
+            'enabled' if common_feature_flags.clip_win == true
+            else 'disabled' if common_feature_flags.clip_win == false
+            else common_feature_flags.clip_win
           }}
         common_feature_mode_copyq: >-
           {{
-            'enabled' if feature_flags.copyq == true
-            else 'disabled' if feature_flags.copyq == false
-            else feature_flags.copyq
+            'enabled' if common_feature_flags.copyq == true
+            else 'disabled' if common_feature_flags.copyq == false
+            else common_feature_flags.copyq
           }}
         common_feature_mode_office_suite: >-
           {{
-            'enabled' if feature_flags.office_suite == true
-            else 'disabled' if feature_flags.office_suite == false
-            else feature_flags.office_suite
+            'enabled' if common_feature_flags.office_suite == true
+            else 'disabled' if common_feature_flags.office_suite == false
+            else common_feature_flags.office_suite
           }}
         common_feature_mode_vscode: >-
           {{
-            'enabled' if feature_flags.vscode == true
-            else 'disabled' if feature_flags.vscode == false
-            else feature_flags.vscode
+            'enabled' if common_feature_flags.vscode == true
+            else 'disabled' if common_feature_flags.vscode == false
+            else common_feature_flags.vscode
           }}
         common_feature_mode_brave: >-
           {{
-            'enabled' if feature_flags.brave == true
-            else 'disabled' if feature_flags.brave == false
-            else feature_flags.brave
+            'enabled' if common_feature_flags.brave == true
+            else 'disabled' if common_feature_flags.brave == false
+            else common_feature_flags.brave
           }}
         common_feature_mode_thunderbird: >-
           {{
-            'enabled' if feature_flags.thunderbird == true
-            else 'disabled' if feature_flags.thunderbird == false
-            else feature_flags.thunderbird
+            'enabled' if common_feature_flags.thunderbird == true
+            else 'disabled' if common_feature_flags.thunderbird == false
+            else common_feature_flags.thunderbird
           }}
         common_feature_mode_docker: >-
           {{
-            'enabled' if feature_flags.docker == true
-            else 'disabled' if feature_flags.docker == false
-            else feature_flags.docker
+            'enabled' if common_feature_flags.docker == true
+            else 'disabled' if common_feature_flags.docker == false
+            else common_feature_flags.docker
           }}
         common_feature_mode_nix: >-
           {{
-            'enabled' if feature_flags.nix == true
-            else 'disabled' if feature_flags.nix == false
-            else feature_flags.nix
+            'enabled' if common_feature_flags.nix == true
+            else 'disabled' if common_feature_flags.nix == false
+            else common_feature_flags.nix
           }}
         common_feature_mode_openvpn: >-
           {{
-            'enabled' if feature_flags.openvpn == true
-            else 'disabled' if feature_flags.openvpn == false
-            else feature_flags.openvpn
+            'enabled' if common_feature_flags.openvpn == true
+            else 'disabled' if common_feature_flags.openvpn == false
+            else common_feature_flags.openvpn
           }}
         common_feature_mode_git_credential_oauth: >-
           {{
-            'enabled' if feature_flags.git_credential_oauth == true
-            else 'disabled' if feature_flags.git_credential_oauth == false
-            else feature_flags.git_credential_oauth
+            'enabled' if common_feature_flags.git_credential_oauth == true
+            else 'disabled' if common_feature_flags.git_credential_oauth == false
+            else common_feature_flags.git_credential_oauth
           }}
         common_feature_mode_firefox: >-
           {{
-            'enabled' if feature_flags.firefox == true
-            else 'disabled' if feature_flags.firefox == false
-            else feature_flags.firefox
+            'enabled' if common_feature_flags.firefox == true
+            else 'disabled' if common_feature_flags.firefox == false
+            else common_feature_flags.firefox
           }}
         common_feature_mode_edge: >-
           {{
-            'enabled' if feature_flags.edge == true
-            else 'disabled' if feature_flags.edge == false
-            else feature_flags.edge
+            'enabled' if common_feature_flags.edge == true
+            else 'disabled' if common_feature_flags.edge == false
+            else common_feature_flags.edge
           }}
         common_feature_mode_virt_manager: >-
           {{
-            'enabled' if feature_flags.virt_manager == true
-            else 'disabled' if feature_flags.virt_manager == false
-            else feature_flags.virt_manager
+            'enabled' if common_feature_flags.virt_manager == true
+            else 'disabled' if common_feature_flags.virt_manager == false
+            else common_feature_flags.virt_manager
           }}
         common_feature_mode_file_manager_integration: >-
           {{
-            'enabled' if feature_flags.file_manager_integration == true
-            else 'disabled' if feature_flags.file_manager_integration == false
-            else feature_flags.file_manager_integration
+            'enabled' if common_feature_flags.file_manager_integration == true
+            else 'disabled' if common_feature_flags.file_manager_integration == false
+            else common_feature_flags.file_manager_integration
           }}
 
     - name: Ensure feature flag modes are valid
