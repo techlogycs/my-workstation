@@ -1,6 +1,7 @@
 ---
 # Copy this file to ansible/group_vars/all/override.yml to override defaults
 # without editing the tracked baseline in main.yml.
+# Keep in mind lists are overrided entirely, so you need to copy the full list if you want to change an item.
 
 feature_flags:
   virt_manager: enabled
