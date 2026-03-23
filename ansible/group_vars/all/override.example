@@ -5,6 +5,7 @@
 
 feature_flags:
   virt_manager: enabled
+  # openvpn: enabled
 
 # Optional virt-manager overrides.
 # virt_manager_packages:
@@ -14,4 +15,8 @@ feature_flags:
 #   - bridge-utils
 #   - virtinst
 #   - virt-manager
+# openvpn_packages:
+#   - openvpn
+#   - network-manager-openvpn
+#   - network-manager-openvpn-gnome
 # virt_manager_default_uri: qemu:///system

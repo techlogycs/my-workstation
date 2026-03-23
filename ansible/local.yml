@@ -16,6 +16,7 @@
         - brave
     - role: system
       tags:
+        - openvpn
         - system
         - packages
         - shell

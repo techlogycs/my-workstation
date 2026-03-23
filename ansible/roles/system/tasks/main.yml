@@ -35,13 +35,24 @@
             'docker-buildx-plugin',
             'docker-compose-plugin'
           ] if common_enable_docker else [])
-        + ([ 'openvpn' ] if common_enable_openvpn else [])
         + ([ 'flatpak' ] if common_flatpak_apps | length > 0 else [])
       }}
     state: present
     update_cache: true
     cache_valid_time: 3600
   tags:
+    - packages
+    - system
+
+- name: Install OpenVPN workstation packages
+  ansible.builtin.apt:
+    name: "{{ openvpn_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when: common_enable_openvpn
+  tags:
+    - openvpn
     - packages
     - system
 

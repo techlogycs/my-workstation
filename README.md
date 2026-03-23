@@ -110,6 +110,7 @@ Los componentes opcionales están controlados desde `ansible/group_vars/all/main
 - Todos los `feature_flags.*` aceptan `enabled`, `disabled` o `auto`. Los booleanos antiguos siguen funcionando porque se normalizan internamente a esos modos.
 - `feature_flags.vscode`, `feature_flags.brave`, `feature_flags.docker`, `feature_flags.nix` y `feature_flags.git_credential_oauth` usan `enabled` por defecto. Hoy en día `auto` se resuelve igual que `enabled` para esos componentes, porque no hay una detección de alternativa equivalente.
 - `feature_flags.virt_manager` usa `disabled` por defecto; cuando lo activas instala libvirt, QEMU y virt-manager, arranca `libvirtd`, añade el usuario objetivo a los grupos `libvirt` y `kvm`, y fija `qemu:///system` como URI por defecto de libvirt para la sesión de usuario.
+- `feature_flags.openvpn` usa `disabled` por defecto; cuando lo activas instala el cliente OpenVPN comunitario desde los paquetes de la distro junto con los plugins de NetworkManager para importar y gestionar perfiles `.ovpn` desde el escritorio.
 - `feature_flags.thunderbird` usa `disabled` por defecto; cuando lo activas, instala `org.mozilla.Thunderbird` vía Flatpak.
 - `feature_flags.desktop_tools` usa `auto` por defecto y solo instala tooling específico de escritorio cuando detecta una base compatible.
 - `feature_flags.clip_win` usa `auto` por defecto y convierte `clip-win` en el gestor de portapapeles preferido cuando no detecta otro ya instalado.
@@ -130,6 +131,7 @@ Los componentes opcionales están controlados desde `ansible/group_vars/all/main
 - `gnome_desktop_package_candidates` define qué paquetes se consideran evidencia de una sesión GNOME; `gnome-tweaks` solo se añade cuando esa base existe.
 - `vscode_file_manager_integration` acepta `auto`, `nautilus`, `desktop-entry` o `disabled`.
 - `virt_manager_packages` define los paquetes APT que componen el stack de virtualización local.
+- `openvpn_packages` define los paquetes APT que componen el soporte OpenVPN de la estación de trabajo.
 - `virt_manager_default_uri` define la URI por defecto que usará virt-manager/libvirt en `~/.config/libvirt/libvirt.conf`.
 
 Para personalizar opciones sin tocar el baseline versionado:
@@ -187,6 +189,14 @@ Las herramientas de escritorio GNOME se comportan así:
 - `rustdesk_version` en `ansible/group_vars/all/main.yml` si quieres fijar otra release oficial de RustDesk.
 - `feature_flags.virt_manager`, `virt_manager_packages` y `virt_manager_default_uri` si quieres ajustar el stack de virtualización local.
 - Los `feature_flags`, `distro_flatpak_apps` y el modo de integración del gestor de archivos en `ansible/group_vars/all/main.yml`.
+- `feature_flags.openvpn` y `openvpn_packages` si quieres instalar solo el cliente CLI o cambiar el stack de integración con NetworkManager.
+
+Para aprovisionar solo OpenVPN y sus paquetes relacionados:
+
+```bash
+ansible-playbook ansible/local.yml --tags openvpn
+./bootstrap.sh --tags openvpn
+```
 
 ## Nota sobre RustDesk
 

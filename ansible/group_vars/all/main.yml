@@ -116,6 +116,10 @@ virt_manager_packages:
   - bridge-utils
   - virtinst
   - virt-manager
+openvpn_packages:
+  - openvpn
+  - network-manager-openvpn
+  - network-manager-openvpn-gnome
 virt_manager_default_uri: qemu:///system
 docker_daemon_config:
   log-driver: json-file
