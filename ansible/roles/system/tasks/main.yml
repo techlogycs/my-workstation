@@ -46,11 +46,11 @@
 
 - name: Install OpenVPN workstation packages
   ansible.builtin.apt:
-    name: "{{ openvpn_packages }}"
+    name: "{{ common_openvpn_packages }}"
     state: present
     update_cache: true
     cache_valid_time: 3600
-  when: common_enable_openvpn
+  when: common_enable_openvpn and common_openvpn_packages | length > 0
   tags:
     - openvpn
     - packages

@@ -156,6 +156,7 @@
             | length > 0
           }}
         common_has_nautilus: "{{ 'nautilus' in ansible_facts.packages }}"
+        common_has_network_manager: "{{ 'network-manager' in ansible_facts.packages }}"
         common_installed_clipboard_managers: >-
           {{
             clipboard_manager_package_candidates
@@ -223,11 +224,33 @@
         common_enable_thunderbird: "{{ common_feature_mode_thunderbird != 'disabled' }}"
         common_enable_docker: "{{ common_feature_mode_docker != 'disabled' }}"
         common_enable_nix: "{{ common_feature_mode_nix != 'disabled' }}"
-        common_enable_openvpn: "{{ common_feature_mode_openvpn != 'disabled' }}"
+        common_enable_openvpn: >-
+          {{
+            common_feature_mode_openvpn == 'enabled'
+            or (
+              common_feature_mode_openvpn == 'auto'
+              and common_has_network_manager
+            )
+          }}
         common_enable_git_credential_oauth: "{{ common_feature_mode_git_credential_oauth != 'disabled' }}"
         common_enable_firefox: "{{ common_feature_mode_firefox != 'disabled' }}"
         common_enable_edge: "{{ common_feature_mode_edge != 'disabled' }}"
         common_enable_virt_manager: "{{ common_feature_mode_virt_manager != 'disabled' }}"
+        common_openvpn_packages: >-
+          {{
+            openvpn_core_packages
+            + (
+              openvpn_network_manager_packages
+              if (
+                common_feature_mode_openvpn == 'enabled'
+                or (
+                  common_feature_mode_openvpn == 'auto'
+                  and common_has_network_manager
+                )
+              )
+              else []
+            )
+          }}
         common_flatpak_apps: >-
           {{
             distro_flatpak_apps.get(ansible_distribution, [])

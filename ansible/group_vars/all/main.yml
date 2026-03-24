@@ -32,7 +32,7 @@ feature_flags_defaults:
   docker: enabled
   virt_manager: disabled
   nix: enabled
-  openvpn: disabled
+  openvpn: auto
   file_manager_integration: auto
 clipboard_manager_package_candidates:
   - clip-win
@@ -116,10 +116,10 @@ virt_manager_packages:
   - bridge-utils
   - virtinst
   - virt-manager
-openvpn_packages:
+openvpn_core_packages:
   - openvpn
+openvpn_network_manager_packages:
   - network-manager-openvpn
-  - network-manager-openvpn-gnome
 virt_manager_default_uri: qemu:///system
 docker_daemon_config:
   log-driver: json-file
