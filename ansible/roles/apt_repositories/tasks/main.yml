@@ -125,7 +125,9 @@
     repo: ppa:git-core/ppa
     state: present
     update_cache: false
-  when: ansible_distribution in supported_distributions
+  when:
+    - ansible_distribution in supported_distributions
+    - not common_selective_feature_run or common_enable_git_credential_oauth
   tags:
     - packages
     - system
@@ -141,7 +143,10 @@
     or common_enable_docker
     or common_enable_edge
     or common_install_copyq
-    or ansible_distribution in supported_distributions
+    or (
+      ansible_distribution in supported_distributions
+      and (not common_selective_feature_run or common_enable_git_credential_oauth)
+    )
   changed_when: false
   tags:
     - packages

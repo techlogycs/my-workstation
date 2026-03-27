@@ -1,4 +1,4 @@
-.PHONY: lint lint-ansible lint-nix format format-ansible format-nix check-ansible-tools check-nix-tools bootstrap ansible-requirements
+.PHONY: lint lint-ansible lint-nix format format-ansible format-nix check-ansible-tools check-nix-tools bootstrap ansible-requirements playbook install-feature
 
 NIX_DIR := ./nix
 ANSIBLE_DIR := ansible
@@ -31,10 +31,16 @@ check-nix-tools:
 	$(call require_command,statix)
 
 ansible-tags ?= all
+features ?=
 
 playbook:
 	@$(MAKE) check-ansible-tools
 	ansible-playbook $(ANSIBLE_DIR)/local.yml --tags "$(ansible-tags)"
+
+install-feature:
+	@if [ -z "$(features)" ]; then echo "Usage: make install-feature features=thunderbird"; exit 2; fi
+	@$(MAKE) check-ansible-tools
+	ansible-playbook $(ANSIBLE_DIR)/local.yml --extra-vars "dotfiles_only_features=$(features)"
 
 lint-ansible:
 	@$(MAKE) check-ansible-tools

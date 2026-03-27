@@ -24,3 +24,7 @@ The system utilizes a **hybrid provisioning strategy** to balance stability with
 1. **Base Layer:** Ansible playbooks to automate `apt` configurations, PPA management, and GNOME/Cosmic desktop settings.
 2. **User Layer:** A declarative `home.nix` configuration to manage the CLI stack (Zsh, Vscode, Tmux) and language runtimes.
 3. **Security Integration:** Automated setup of SSH keys, GPG signing, and encrypted secrets management. Optional for user.
+
+### Development Workflow
+* **Linting & Testing:** Run make lint
+* **Formatting:** Run make format

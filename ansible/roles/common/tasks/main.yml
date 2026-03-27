@@ -14,96 +14,157 @@
       ansible.builtin.set_fact:
         common_feature_flags: >-
           {{ feature_flags_defaults | combine(feature_flags | default({}), recursive=True) }}
+        common_known_feature_flags: "{{ feature_flags_defaults.keys() | list }}"
+
+    - name: Normalize runtime-only feature selection
+      ansible.builtin.set_fact:
+        common_only_features: >-
+          {{
+            (
+              dotfiles_only_features.split(',')
+              if dotfiles_only_features is string
+              else dotfiles_only_features
+            )
+            | default([], true)
+            | map('trim')
+            | reject('equalto', '')
+            | unique
+            | list
+          }}
+
+    - name: Ensure runtime-only feature selection is valid
+      ansible.builtin.assert:
+        that:
+          - >-
+            common_only_features
+            | difference(common_known_feature_flags)
+            | length == 0
+        fail_msg: >-
+          dotfiles_only_features only accepts known feature flags.
+
+    - name: Derive selective run facts
+      ansible.builtin.set_fact:
+        common_selective_feature_run: "{{ common_only_features | length > 0 }}"
 
     - name: Normalize feature flags to string modes
       ansible.builtin.set_fact:
         common_feature_mode_desktop_tools: >-
           {{
-            'enabled' if common_feature_flags.desktop_tools == true
+            'enabled' if 'desktop_tools' in common_only_features
+            else 'disabled' if common_only_features | length > 0
+            else 'enabled' if common_feature_flags.desktop_tools == true
             else 'disabled' if common_feature_flags.desktop_tools == false
             else common_feature_flags.desktop_tools
           }}
         common_feature_mode_clip_win: >-
           {{
-            'enabled' if common_feature_flags.clip_win == true
+            'enabled' if 'clip_win' in common_only_features
+            else 'disabled' if common_only_features | length > 0
+            else 'enabled' if common_feature_flags.clip_win == true
             else 'disabled' if common_feature_flags.clip_win == false
             else common_feature_flags.clip_win
           }}
         common_feature_mode_copyq: >-
           {{
-            'enabled' if common_feature_flags.copyq == true
+            'enabled' if 'copyq' in common_only_features
+            else 'disabled' if common_only_features | length > 0
+            else 'enabled' if common_feature_flags.copyq == true
             else 'disabled' if common_feature_flags.copyq == false
             else common_feature_flags.copyq
           }}
         common_feature_mode_office_suite: >-
           {{
-            'enabled' if common_feature_flags.office_suite == true
+            'enabled' if 'office_suite' in common_only_features
+            else 'disabled' if common_only_features | length > 0
+            else 'enabled' if common_feature_flags.office_suite == true
             else 'disabled' if common_feature_flags.office_suite == false
             else common_feature_flags.office_suite
           }}
         common_feature_mode_vscode: >-
           {{
-            'enabled' if common_feature_flags.vscode == true
+            'enabled' if 'vscode' in common_only_features
+            else 'disabled' if common_only_features | length > 0
+            else 'enabled' if common_feature_flags.vscode == true
             else 'disabled' if common_feature_flags.vscode == false
             else common_feature_flags.vscode
           }}
         common_feature_mode_brave: >-
           {{
-            'enabled' if common_feature_flags.brave == true
+            'enabled' if 'brave' in common_only_features
+            else 'disabled' if common_only_features | length > 0
+            else 'enabled' if common_feature_flags.brave == true
             else 'disabled' if common_feature_flags.brave == false
             else common_feature_flags.brave
           }}
         common_feature_mode_thunderbird: >-
           {{
-            'enabled' if common_feature_flags.thunderbird == true
+            'enabled' if 'thunderbird' in common_only_features
+            else 'disabled' if common_only_features | length > 0
+            else 'enabled' if common_feature_flags.thunderbird == true
             else 'disabled' if common_feature_flags.thunderbird == false
             else common_feature_flags.thunderbird
           }}
         common_feature_mode_docker: >-
           {{
-            'enabled' if common_feature_flags.docker == true
+            'enabled' if 'docker' in common_only_features
+            else 'disabled' if common_only_features | length > 0
+            else 'enabled' if common_feature_flags.docker == true
             else 'disabled' if common_feature_flags.docker == false
             else common_feature_flags.docker
           }}
         common_feature_mode_nix: >-
           {{
-            'enabled' if common_feature_flags.nix == true
+            'enabled' if 'nix' in common_only_features
+            else 'disabled' if common_only_features | length > 0
+            else 'enabled' if common_feature_flags.nix == true
             else 'disabled' if common_feature_flags.nix == false
             else common_feature_flags.nix
           }}
         common_feature_mode_openvpn: >-
           {{
-            'enabled' if common_feature_flags.openvpn == true
+            'enabled' if 'openvpn' in common_only_features
+            else 'disabled' if common_only_features | length > 0
+            else 'enabled' if common_feature_flags.openvpn == true
             else 'disabled' if common_feature_flags.openvpn == false
             else common_feature_flags.openvpn
           }}
         common_feature_mode_git_credential_oauth: >-
           {{
-            'enabled' if common_feature_flags.git_credential_oauth == true
+            'enabled' if 'git_credential_oauth' in common_only_features
+            else 'disabled' if common_only_features | length > 0
+            else 'enabled' if common_feature_flags.git_credential_oauth == true
             else 'disabled' if common_feature_flags.git_credential_oauth == false
             else common_feature_flags.git_credential_oauth
           }}
         common_feature_mode_firefox: >-
           {{
-            'enabled' if common_feature_flags.firefox == true
+            'enabled' if 'firefox' in common_only_features
+            else 'disabled' if common_only_features | length > 0
+            else 'enabled' if common_feature_flags.firefox == true
             else 'disabled' if common_feature_flags.firefox == false
             else common_feature_flags.firefox
           }}
         common_feature_mode_edge: >-
           {{
-            'enabled' if common_feature_flags.edge == true
+            'enabled' if 'edge' in common_only_features
+            else 'disabled' if common_only_features | length > 0
+            else 'enabled' if common_feature_flags.edge == true
             else 'disabled' if common_feature_flags.edge == false
             else common_feature_flags.edge
           }}
         common_feature_mode_virt_manager: >-
           {{
-            'enabled' if common_feature_flags.virt_manager == true
+            'enabled' if 'virt_manager' in common_only_features
+            else 'disabled' if common_only_features | length > 0
+            else 'enabled' if common_feature_flags.virt_manager == true
             else 'disabled' if common_feature_flags.virt_manager == false
             else common_feature_flags.virt_manager
           }}
         common_feature_mode_file_manager_integration: >-
           {{
-            'enabled' if common_feature_flags.file_manager_integration == true
+            'enabled' if 'file_manager_integration' in common_only_features
+            else 'disabled' if common_only_features | length > 0
+            else 'enabled' if common_feature_flags.file_manager_integration == true
             else 'disabled' if common_feature_flags.file_manager_integration == false
             else common_feature_flags.file_manager_integration
           }}
@@ -253,7 +314,7 @@
           }}
         common_flatpak_apps: >-
           {{
-            distro_flatpak_apps.get(ansible_distribution, [])
+            ([] if common_selective_feature_run else distro_flatpak_apps.get(ansible_distribution, []))
             + ([ 'org.mozilla.Thunderbird' ] if common_feature_mode_thunderbird != 'disabled' else [])
           }}
         common_enable_file_manager_integration: >-
@@ -263,6 +324,69 @@
               common_feature_mode_file_manager_integration == 'auto'
               and common_feature_mode_vscode != 'disabled'
             )
+          }}
+        common_run_role_apt_repositories: >-
+          {{
+            (not common_selective_feature_run)
+            or (
+              common_only_features
+              | intersect(['vscode', 'brave', 'docker', 'edge', 'copyq', 'git_credential_oauth'])
+              | length > 0
+            )
+          }}
+        common_run_role_system: >-
+          {{
+            (not common_selective_feature_run)
+            or (
+              common_only_features
+              | intersect([
+                'desktop_tools',
+                'clip_win',
+                'copyq',
+                'office_suite',
+                'thunderbird',
+                'docker',
+                'openvpn',
+                'git_credential_oauth',
+                'firefox',
+                'edge'
+              ])
+              | length > 0
+            )
+          }}
+        common_run_role_desktop_apps: >-
+          {{
+            (not common_selective_feature_run)
+            or (
+              common_only_features
+              | intersect(['vscode', 'brave'])
+              | length > 0
+            )
+          }}
+        common_run_role_flatpak: >-
+          {{
+            (not common_selective_feature_run)
+            or 'thunderbird' in common_only_features
+          }}
+        common_run_role_docker: >-
+          {{
+            (not common_selective_feature_run)
+            or 'docker' in common_only_features
+          }}
+        common_run_role_virt_manager: >-
+          {{
+            (not common_selective_feature_run)
+            or 'virt_manager' in common_only_features
+          }}
+        common_run_role_file_manager: >-
+          {{
+            (not common_selective_feature_run)
+            or 'file_manager_integration' in common_only_features
+          }}
+        common_run_role_nix: >-
+          {{
+            (not common_selective_feature_run)
+            or 'nix' in common_only_features
           }}
         common_apt_desktop_packages: >-
           {{

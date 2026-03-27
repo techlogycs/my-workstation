@@ -40,6 +40,44 @@
     state: present
     update_cache: true
     cache_valid_time: 3600
+  when: not common_selective_feature_run
+  tags:
+    - packages
+    - system
+
+- name: Install selective APT feature packages
+  ansible.builtin.apt:
+    name: >-
+      {{
+        common_apt_desktop_packages
+        + ([ 'acl', 'wl-clipboard', 'xclip' ] if common_install_clip_win else [])
+        + ([ 'copyq', 'copyq-plugins' ] if common_install_copyq else [])
+        + ([ 'libreoffice' ] if common_install_libreoffice else [])
+        + ([ 'firefox' ] if common_enable_firefox else [])
+        + ([ 'microsoft-edge-stable' ] if common_enable_edge else [])
+        + ([
+            'docker-ce',
+            'docker-ce-cli',
+            'containerd.io',
+            'docker-buildx-plugin',
+            'docker-compose-plugin'
+          ] if common_enable_docker else [])
+        + ([ 'flatpak' ] if common_flatpak_apps | length > 0 else [])
+      }}
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  when:
+    - common_selective_feature_run
+    - >-
+      common_apt_desktop_packages | length > 0
+      or common_install_clip_win
+      or common_install_copyq
+      or common_install_libreoffice
+      or common_enable_firefox
+      or common_enable_edge
+      or common_enable_docker
+      or common_flatpak_apps | length > 0
   tags:
     - packages
     - system
@@ -168,6 +206,7 @@
   ansible.builtin.user:
     name: "{{ local_user }}"
     shell: /usr/bin/zsh
+  when: not common_selective_feature_run
   tags:
     - shell
     - system

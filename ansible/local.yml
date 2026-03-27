@@ -4,43 +4,116 @@
   gather_facts: true
   become: true
 
-  roles:
-    - role: common
+  pre_tasks:
+    - name: Load shared workstation facts
+      ansible.builtin.include_role:
+        name: common
+        apply:
+          tags:
+            - always
+            - facts
       tags:
         - always
         - facts
-    - role: apt_repositories
+
+  tasks:
+    - name: Manage APT repositories
+      ansible.builtin.include_role:
+        name: apt_repositories
+        apply:
+          tags:
+            - repos
+            - vscode
+            - brave
+      when: common_run_role_apt_repositories
       tags:
         - repos
         - vscode
         - brave
-    - role: system
+
+    - name: Manage system packages and shell setup
+      ansible.builtin.include_role:
+        name: system
+        apply:
+          tags:
+            - openvpn
+            - system
+            - packages
+            - shell
+      when: common_run_role_system
       tags:
         - openvpn
         - system
         - packages
         - shell
-    - role: desktop_apps
+
+    - name: Manage desktop applications
+      ansible.builtin.include_role:
+        name: desktop_apps
+        apply:
+          tags:
+            - applications
+            - vscode
+            - brave
+            - rustdesk
+      when: common_run_role_desktop_apps
       tags:
         - applications
         - vscode
         - brave
         - rustdesk
-    - role: flatpak
+
+    - name: Manage Flatpak applications
+      ansible.builtin.include_role:
+        name: flatpak
+        apply:
+          tags:
+            - flatpak
+      when: common_run_role_flatpak
       tags:
         - flatpak
-    - role: docker
+
+    - name: Manage Docker daemon configuration
+      ansible.builtin.include_role:
+        name: docker
+        apply:
+          tags:
+            - docker
+      when: common_run_role_docker
       tags:
         - docker
-    - role: virt_manager
+
+    - name: Manage virt-manager stack
+      ansible.builtin.include_role:
+        name: virt_manager
+        apply:
+          tags:
+            - virt-manager
+            - virtualization
+      when: common_run_role_virt_manager
       tags:
         - virt-manager
         - virtualization
-    - role: file_manager
+
+    - name: Manage file manager integration
+      ansible.builtin.include_role:
+        name: file_manager
+        apply:
+          tags:
+            - file-manager
+            - vscode
+      when: common_run_role_file_manager
       tags:
         - file-manager
         - vscode
-    - role: nix
+
+    - name: Manage Nix and Home Manager
+      ansible.builtin.include_role:
+        name: nix
+        apply:
+          tags:
+            - nix
+      when: common_run_role_nix
       tags:
         - nix
 

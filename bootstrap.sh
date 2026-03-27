@@ -9,6 +9,29 @@ REPO_DIR="${HOME}/my-workstation"
 DEFAULT_REPO_URL="https://github.com/techlogycs/my-workstation.git"
 REPO_URL="${DOTFILES_REPO_URL:-${DEFAULT_REPO_URL}}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ONLY_FEATURES=""
+ANSIBLE_ARGS=()
+
+while (($# > 0)); do
+  case "$1" in
+    --only-feature|--only-features)
+      if (($# < 2)); then
+        echo "Missing value for $1" >&2
+        exit 2
+      fi
+      ONLY_FEATURES="$2"
+      shift 2
+      ;;
+    --only-feature=*|--only-features=*)
+      ONLY_FEATURES="${1#*=}"
+      shift
+      ;;
+    *)
+      ANSIBLE_ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
 
 sudo -v
 
@@ -43,4 +66,9 @@ else
 fi
 
 cd "${REPO_DIR}"
-ansible-playbook ansible/local.yml "$@"
+
+if [[ -n "${ONLY_FEATURES}" ]]; then
+  ANSIBLE_ARGS+=(--extra-vars "dotfiles_only_features=${ONLY_FEATURES}")
+fi
+
+ansible-playbook ansible/local.yml "${ANSIBLE_ARGS[@]}"

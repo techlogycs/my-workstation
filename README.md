@@ -67,6 +67,8 @@ Ejemplos:
 ansible-playbook ansible/local.yml --tags docker
 ansible-playbook ansible/local.yml --tags virt-manager
 ansible-playbook ansible/local.yml --tags nix,file-manager
+make install-feature features=thunderbird
+./bootstrap.sh --only-feature thunderbird
 ./bootstrap.sh --tags system
 ```
 
@@ -102,6 +104,7 @@ El `Makefile` expone también objetivos separados:
 - `make lint-nix`
 - `make format-ansible`
 - `make format-nix`
+- `make install-feature features=thunderbird`
 
 ## Configuración
 
@@ -204,6 +207,24 @@ Para aprovisionar solo OpenVPN y sus paquetes relacionados:
 ```bash
 ansible-playbook ansible/local.yml --tags openvpn
 ./bootstrap.sh --tags openvpn
+```
+
+Para instalar solo una feature opcional sin tocar `override.yml`, usa `dotfiles_only_features`.
+El selector fuerza a `enabled` solo las features indicadas, desactiva el resto de features opcionales durante esa ejecución y evita incluir roles no relacionados. En una ejecución como `thunderbird`, el playbook ya no recorre `desktop_apps`, `docker`, `virt_manager`, `file_manager` ni `nix`, y tampoco instala el bundle por defecto de Flatpaks de escritorio.
+
+Ejemplos:
+
+```bash
+ansible-playbook ansible/local.yml --extra-vars 'dotfiles_only_features=thunderbird'
+make install-feature features=thunderbird
+./bootstrap.sh --only-feature thunderbird
+```
+
+También acepta varias features separadas por comas:
+
+```bash
+make install-feature features=thunderbird,openvpn
+./bootstrap.sh --only-feature thunderbird,openvpn
 ```
 
 ## Nota sobre RustDesk
