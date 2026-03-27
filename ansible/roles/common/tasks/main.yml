@@ -310,6 +310,15 @@
         common_enable_firefox: "{{ common_feature_mode_firefox != 'disabled' }}"
         common_enable_edge: "{{ common_feature_mode_edge != 'disabled' }}"
         common_enable_virt_manager: "{{ common_feature_mode_virt_manager != 'disabled' }}"
+        common_enable_secret_service: >-
+          {{
+            (
+              common_has_gnome_desktop
+              or 'pop' in common_current_desktop
+              or 'cosmic' in common_current_desktop
+            )
+            and (common_enable_vscode or common_enable_git_credential_oauth)
+          }}
         common_openvpn_packages: >-
           {{
             openvpn_core_packages
@@ -353,6 +362,7 @@
             or (
               common_only_features
               | intersect([
+                'vscode',
                 'desktop_tools',
                 'clip_win',
                 'copyq',
@@ -408,6 +418,12 @@
               common_feature_mode_desktop_tools == 'enabled'
               or (common_feature_mode_desktop_tools == 'auto' and common_has_gnome_desktop)
             )
+            else []
+          }}
+        common_secret_service_packages: >-
+          {{
+            gnome_secret_service_packages
+            if common_enable_secret_service
             else []
           }}
         common_install_clip_win: >-

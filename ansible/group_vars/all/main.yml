@@ -58,6 +58,8 @@ gnome_desktop_package_candidates:
   - ubuntu-desktop
   - ubuntu-desktop-minimal
   - pop-desktop
+gnome_secret_service_packages:
+  - gnome-keyring
 office_suite_package_candidates:
   - libreoffice
   - libreoffice-core

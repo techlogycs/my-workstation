@@ -23,6 +23,7 @@
       {{
         apt_base_packages
         + common_apt_desktop_packages
+        + common_secret_service_packages
         + ([ 'acl', 'wl-clipboard', 'xclip' ] if common_install_clip_win else [])
         + ([ 'copyq', 'copyq-plugins' ] if common_install_copyq else [])
         + ([ 'libreoffice' ] if common_install_libreoffice else [])
@@ -50,6 +51,7 @@
     name: >-
       {{
         common_apt_desktop_packages
+        + common_secret_service_packages
         + ([ 'acl', 'wl-clipboard', 'xclip' ] if common_install_clip_win else [])
         + ([ 'copyq', 'copyq-plugins' ] if common_install_copyq else [])
         + ([ 'libreoffice' ] if common_install_libreoffice else [])
@@ -71,6 +73,7 @@
     - common_selective_feature_run
     - >-
       common_apt_desktop_packages | length > 0
+      or common_secret_service_packages | length > 0
       or common_install_clip_win
       or common_install_copyq
       or common_install_libreoffice

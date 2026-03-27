@@ -130,6 +130,7 @@ Los componentes opcionales están controlados desde `ansible/group_vars/all/main
 - `feature_flags.file_manager_integration` usa `auto` por defecto y solo habilita la integración si VS Code también está habilitado.
 - `feature_flags.git_credential_oauth` migra la autenticación HTTP(S) de Git a Git Credential Manager, instalado desde un `.deb` upstream fijado por versión y checksum para Ubuntu y Pop!_OS.
 - La configuración global de Git pasa a usar `credential.helper=/usr/local/bin/git-credential-manager` y `credential.credentialStore=secretservice`, de modo que los tokens quedan persistidos en el keyring del escritorio y sobreviven reinicios.
+- Si el host tiene una sesión GNOME, Pop o COSMIC y habilitas VS Code o Git Credential Manager, el playbook instala `gnome-keyring` para que exista un proveedor Secret Service/libsecret y no aparezca el warning de keyring en VS Code.
 - El playbook elimina `git-credential-oauth` y mantiene `ppa:git-core/ppa` en Ubuntu y Pop!_OS para instalar una versión upstream reciente de Git, compatible con Git Credential Manager.
 - `apt_base_packages` incluye `ripgrep`, y el entorno de Home Manager añade `ripgrep` para que el comando `rg` exista tanto en la capa del sistema como en la del usuario.
 - `distro_flatpak_apps` define las aplicaciones de escritorio vía Flatpak por distro, excluyendo RustDesk porque se instala de forma nativa.
@@ -140,6 +141,7 @@ Los componentes opcionales están controlados desde `ansible/group_vars/all/main
 - `clip_win_version` y `clip_win_release_deb_checksums` fijan la release pública de `techlogycs/clip-win` que se instala de forma reproducible desde GitHub Releases.
 - `office_suite_package_candidates` define qué paquetes cuentan como suite ofimática existente a efectos del modo `auto` de LibreOffice.
 - `gnome_desktop_package_candidates` define qué paquetes se consideran evidencia de una sesión GNOME; `gnome-tweaks` solo se añade cuando esa base existe.
+- `gnome_secret_service_packages` define qué paquete aporta el backend Secret Service/libsecret para sesiones GNOME.
 - `vscode_file_manager_integration` acepta `auto`, `nautilus`, `desktop-entry` o `disabled`.
 - `virt_manager_packages` define los paquetes APT que componen el stack de virtualización local.
 - `openvpn_core_packages` define la base mínima de OpenVPN.
