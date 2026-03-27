@@ -129,3 +129,6 @@ docker_daemon_config:
     mode: non-blocking
     max-buffer-size: 4m
 vscode_file_manager_integration: auto
+nix_install_mode: single-user
+nix_home_manager_profile_name: my-workstation-home-manager
+nix_cleanup_generation_max_age_days: 30

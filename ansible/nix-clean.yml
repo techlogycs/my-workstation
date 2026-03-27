@@ -1,0 +1,29 @@
+---
+- name: Prune old Nix and Home Manager generations
+  hosts: workstation
+  gather_facts: true
+  become: false
+
+  pre_tasks:
+    - name: Load shared workstation facts
+      ansible.builtin.include_role:
+        name: common
+        apply:
+          tags:
+            - always
+            - facts
+      tags:
+        - always
+        - facts
+
+  tasks:
+    - name: Clean old Nix generations and unreachable store paths
+      ansible.builtin.include_role:
+        name: nix
+        tasks_from: cleanup
+        apply:
+          tags:
+            - nix-clean
+      when: common_run_role_nix
+      tags:
+        - nix-clean

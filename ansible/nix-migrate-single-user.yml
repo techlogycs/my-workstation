@@ -1,0 +1,29 @@
+---
+- name: Migrate multi-user Nix to single-user Nix
+  hosts: workstation
+  gather_facts: true
+  become: true
+
+  pre_tasks:
+    - name: Load shared workstation facts
+      ansible.builtin.include_role:
+        name: common
+        apply:
+          tags:
+            - always
+            - facts
+      tags:
+        - always
+        - facts
+
+  tasks:
+    - name: Migrate existing multi-user Nix installation to single-user mode
+      ansible.builtin.include_role:
+        name: nix
+        tasks_from: migrate_single_user
+        apply:
+          tags:
+            - nix-migrate-single-user
+      when: common_run_role_nix
+      tags:
+        - nix-migrate-single-user

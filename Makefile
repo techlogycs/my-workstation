@@ -1,4 +1,4 @@
-.PHONY: lint lint-ansible lint-nix format format-ansible format-nix check-ansible-tools check-nix-tools bootstrap ansible-requirements playbook install-feature
+.PHONY: lint lint-ansible lint-nix format format-ansible format-nix check-ansible-tools check-nix-tools bootstrap ansible-requirements playbook install-feature nix-clean nix-migrate-single-user
 
 NIX_DIR := ./nix
 ANSIBLE_DIR := ansible
@@ -26,6 +26,9 @@ check-ansible-tools:
 	$(call require_command,ansible-lint)
 	$(call require_command,yamllint)
 
+check-ansible-runtime:
+	$(call require_command,ansible-playbook)
+
 check-nix-tools:
 	$(call require_command,nix)
 	$(call require_command,statix)
@@ -34,13 +37,21 @@ ansible-tags ?= all
 features ?=
 
 playbook:
-	@$(MAKE) check-ansible-tools
+	@$(MAKE) check-ansible-runtime
 	ansible-playbook $(ANSIBLE_DIR)/local.yml --tags "$(ansible-tags)"
 
 install-feature:
 	@if [ -z "$(features)" ]; then echo "Usage: make install-feature features=thunderbird"; exit 2; fi
-	@$(MAKE) check-ansible-tools
+	@$(MAKE) check-ansible-runtime
 	ansible-playbook $(ANSIBLE_DIR)/local.yml --extra-vars "dotfiles_only_features=$(features)"
+
+nix-clean:
+	@$(MAKE) check-ansible-runtime
+	ansible-playbook $(ANSIBLE_DIR)/nix-clean.yml
+
+nix-migrate-single-user:
+	@$(MAKE) check-ansible-runtime
+	ansible-playbook $(ANSIBLE_DIR)/nix-migrate-single-user.yml -K
 
 lint-ansible:
 	@$(MAKE) check-ansible-tools

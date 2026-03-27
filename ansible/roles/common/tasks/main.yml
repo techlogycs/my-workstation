@@ -195,6 +195,12 @@
           - vscode_file_manager_integration in ['auto', 'nautilus', 'desktop-entry', 'disabled']
         fail_msg: vscode_file_manager_integration must be auto, nautilus, desktop-entry, or disabled.
 
+    - name: Ensure the Nix install mode is valid
+      ansible.builtin.assert:
+        that:
+          - nix_install_mode in ['single-user', 'multi-user']
+        fail_msg: nix_install_mode must be single-user or multi-user.
+
     - name: Gather installed package facts
       ansible.builtin.package_facts:
         manager: auto
@@ -209,6 +215,13 @@
           }}
         common_host_nix_system: "{{ nix_system_map.get(ansible_architecture, 'x86_64-linux') }}"
         common_home_manager_activation_link: "{{ local_home }}/.cache/home-manager-activation"
+        common_nix_profiles_dir: "{{ local_home }}/.local/state/nix/profiles"
+        common_home_manager_profile_path: >-
+          {{ local_home }}/.local/state/nix/profiles/{{ nix_home_manager_profile_name }}
+        common_home_manager_legacy_profile_path: "{{ local_home }}/.local/state/nix/profiles/home-manager"
+        common_home_manager_state_legacy_profile_path: "{{ local_home }}/.local/state/home-manager/profiles/home-manager"
+        common_home_manager_global_legacy_profile_path: "/nix/var/nix/profiles/per-user/{{ local_user }}/home-manager"
+        common_nix_daemon_profile_script: /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
         common_has_gnome_desktop: >-
           {{
             gnome_desktop_package_candidates

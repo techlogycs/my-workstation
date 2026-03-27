@@ -60,6 +60,8 @@ El playbook usa roles pequeños y etiquetados para que puedas ejecutar solo una 
 - `docker`: configuración de `daemon.json` y servicio.
 - `file_manager`: integración “Open in Code”.
 - `nix`: instalación de Nix y activación de Home Manager.
+- `nix-clean`: limpieza de generaciones antiguas del perfil gestionado de Nix/Home Manager y garbage collection del store.
+- `nix-migrate-single-user`: desinstala una instalación multiusuario existente de Nix y reprovisiona Nix en modo `single-user`.
 
 Ejemplos:
 
@@ -67,7 +69,11 @@ Ejemplos:
 ansible-playbook ansible/local.yml --tags docker
 ansible-playbook ansible/local.yml --tags virt-manager
 ansible-playbook ansible/local.yml --tags nix,file-manager
+ansible-playbook ansible/nix-clean.yml
+ansible-playbook ansible/nix-migrate-single-user.yml
 make install-feature features=thunderbird
+make nix-clean
+make nix-migrate-single-user
 ./bootstrap.sh --only-feature thunderbird
 ./bootstrap.sh --tags system
 ```
@@ -105,6 +111,8 @@ El `Makefile` expone también objetivos separados:
 - `make format-ansible`
 - `make format-nix`
 - `make install-feature features=thunderbird`
+- `make nix-migrate-single-user`
+- `make nix-clean`
 
 ## Configuración
 
@@ -184,8 +192,12 @@ Las herramientas de escritorio GNOME se comportan así:
 - La instalación de Flatpak comprueba primero qué remotos y aplicaciones existen antes de añadir o instalar nada, para mantener la ejecución repetible.
 - RustDesk se instala desde el `.deb` oficial upstream y no vía Flatpak, porque el servicio nativo de systemd es el camino necesario para acceso pre-login y reinicios limpios del host.
 - Docker usa `json-file` con rotación, modo `non-blocking` y buffer acotado para evitar crecimiento descontrolado de logs y reducir bloqueos por I/O, preservando otras claves ya presentes en `daemon.json` como `data-root`.
-- Nix se instala con Determinate Systems porque simplifica una instalación consistente en Ubuntu/Pop!_OS.
+- Nix usa `nix_install_mode` para controlar cómo se instala en el host. El valor por defecto es `single-user`, que evita crear la batería de usuarios `nixbld*` en estaciones de trabajo donde no hace falta el daemon multiusuario. Si necesitas el modelo clásico con daemon y build users compartidos, cambia `nix_install_mode` a `multi-user`.
+- En modo `multi-user`, el repositorio sigue usando Determinate Systems para simplificar una instalación consistente en Ubuntu/Pop!_OS.
 - Home Manager se activa construyendo el paquete de activación desde el flake del sistema detectado, lo que evita depender de una arquitectura fija o de una instalación previa del ejecutable `home-manager` en el host.
+- La activación de Home Manager usa un perfil nombrado y estable en `~/.local/state/nix/profiles/my-workstation-home-manager`; Ansible actualiza ese perfil explícitamente y ejecuta el script `activate` con `--driver-version 1` para evitar que el propio activation script siga creando generaciones extra en el perfil legacy `home-manager`.
+- El playbook `ansible/nix-clean.yml` y el atajo `make nix-clean` podan generaciones antiguas del perfil nombrado actual y también de las rutas legacy conocidas de Home Manager, incluyendo `~/.local/state/nix/profiles/home-manager`, `~/.local/state/home-manager/profiles/home-manager` y `/nix/var/nix/profiles/per-user/$USER/home-manager` si aún existen; después ejecutan `nix store gc`.
+- Si una máquina ya tiene Nix multiusuario y quieres eliminar los usuarios `nixbld*`, usa `ansible/nix-migrate-single-user.yml` o `make nix-migrate-single-user`. Ese flujo desinstala la instalación multiusuario existente con `/nix/nix-installer uninstall --no-confirm` cuando detecta Determinate, o aplica los pasos documentados por upstream para Linux con systemd cuando no hay receipt/uninstaller, y luego vuelve a aprovisionar Nix en modo `single-user`.
 - Home Manager también instala un timer de usuario que limpia periódicamente ficheros antiguos en `~/Downloads`, aplica limpieza por antigüedad solo a directorios explícitos de herramientas sin pruning nativo claro como `~/.bun/install/cache`, `~/.cache/cargo-target`, `~/.cache/go-build` y `~/.cache/go/pkg/mod`, y además ejecuta `uv cache prune`, `direnv prune` y `nix-collect-garbage --delete-older-than` para evitar barridos agresivos sobre todo `~/.cache`.
 - Home Manager también instala wrappers `npm` y `npx` en `~/.local/bin` para que Bun pueda actuar como sustituto por defecto de `npm` y `npx` en la shell del usuario.
 - GitHub Copilot CLI se instala mediante el paquete oficial `@github/copilot` usando el `npm` real de Node.js durante la activación de Home Manager, evitando depender del derivation unfree de Nix.
@@ -196,6 +208,8 @@ Las herramientas de escritorio GNOME se comportan así:
 - El tema de Oh My Zsh en `nix/home.nix`.
 - Los wrappers `npm` y `npx` en `nix/home.nix` si prefieres mantener los binarios de Node.js sin Bun como compat layer.
 - La política `cleanupPolicy` en `nix/home.nix` si quieres cambiar la frecuencia o la antigüedad máxima de `Downloads`, los directorios explícitos con limpieza por antigüedad, o la limpieza nativa de `uv`, `direnv` y Nix.
+- `nix_home_manager_profile_name` y `nix_cleanup_generation_max_age_days` en `ansible/group_vars/all/main.yml` si quieres renombrar el perfil estable de Home Manager o cambiar la retención que usa `make nix-clean`.
+- `nix_install_mode` en `ansible/group_vars/all/main.yml` si quieres elegir entre `single-user` y `multi-user`. Si una máquina ya tiene Nix multiusuario instalado, el playbook falla de forma explícita cuando pides `single-user` para que no te quedes con los usuarios `nixbld*` pensando que el modo cambió solo.
 - `DOTFILES_EDITOR` si desactivas VS Code y quieres que `EDITOR` y `VISUAL` apunten a otro binario.
 - `rustdesk_version` en `ansible/group_vars/all/main.yml` si quieres fijar otra release oficial de RustDesk.
 - `feature_flags.virt_manager`, `virt_manager_packages` y `virt_manager_default_uri` si quieres ajustar el stack de virtualización local.

@@ -1,4 +1,81 @@
 ---
+- name: Check whether a multi-user Nix installation already exists
+  become: false
+  ansible.builtin.stat:
+    path: "{{ common_nix_daemon_profile_script }}"
+  register: nix_daemon_profile_stat
+  when: common_enable_nix
+  tags:
+    - nix
+
+- name: Refuse to keep a multi-user Nix install when single-user mode is requested
+  ansible.builtin.fail:
+    msg: >-
+      This host already has a multi-user Nix installation at {{ common_nix_daemon_profile_script }}.
+      To remove the extra nixbld system users, run ansible-playbook ansible/nix-migrate-single-user.yml
+      or make nix-migrate-single-user, then rerun the normal playbook.
+  when:
+    - common_enable_nix
+    - nix_install_mode == 'single-user'
+    - nix_daemon_profile_stat.stat.exists
+  tags:
+    - nix
+
+- name: Check whether /nix already exists for single-user installs
+  ansible.builtin.stat:
+    path: /nix
+  register: nix_root_stat
+  when:
+    - common_enable_nix
+    - nix_install_mode == 'single-user'
+  tags:
+    - nix
+
+- name: Ensure /nix is owned by the target user for single-user installs
+  ansible.builtin.file:
+    path: /nix
+    state: directory
+    owner: "{{ local_user }}"
+    group: "{{ local_user }}"
+    mode: "0755"
+    recurse: true
+  when:
+    - common_enable_nix
+    - nix_install_mode == 'single-user'
+    - not nix_daemon_profile_stat.stat.exists
+    - nix_root_stat.stat.exists
+  tags:
+    - nix
+
+- name: Create /nix for single-user installs when it is absent
+  ansible.builtin.file:
+    path: /nix
+    state: directory
+    owner: "{{ local_user }}"
+    group: "{{ local_user }}"
+    mode: "0755"
+  when:
+    - common_enable_nix
+    - nix_install_mode == 'single-user'
+    - not nix_daemon_profile_stat.stat.exists
+    - not nix_root_stat.stat.exists
+  tags:
+    - nix
+
+- name: Install Nix with the upstream single-user installer
+  become: false
+  ansible.builtin.shell: |
+    set -Eeuo pipefail
+    curl -L https://nixos.org/nix/install | sh -s -- --no-daemon
+  args:
+    creates: "{{ local_home }}/.nix-profile/bin/nix"
+    executable: /bin/bash
+  when:
+    - common_enable_nix
+    - nix_install_mode == 'single-user'
+  tags:
+    - nix
+
 - name: Install Nix with the Determinate Systems installer
   ansible.builtin.shell: |
     set -Eeuo pipefail
@@ -6,7 +83,9 @@
   args:
     creates: /nix
     executable: /bin/bash
-  when: common_enable_nix
+  when:
+    - common_enable_nix
+    - nix_install_mode == 'multi-user'
   tags:
     - nix
 
@@ -20,13 +99,23 @@
   tags:
     - nix
 
+- name: Ensure the Nix profile directory exists
+  become: false
+  ansible.builtin.file:
+    path: "{{ common_nix_profiles_dir }}"
+    state: directory
+    mode: "0755"
+  when: common_enable_nix
+  tags:
+    - nix
+
 - name: Build the Home Manager activation package from the pinned flake
   become: false
   ansible.builtin.shell: |
     set -Eeuo pipefail
 
-    if [[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
-      source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+    if [[ -f '{{ common_nix_daemon_profile_script }}' ]]; then
+      source '{{ common_nix_daemon_profile_script }}'
     elif [[ -f "$HOME/.nix-profile/etc/profile.d/nix.sh" ]]; then
       source "$HOME/.nix-profile/etc/profile.d/nix.sh"
     elif ! command -v nix >/dev/null 2>&1; then
@@ -77,8 +166,19 @@
 
 - name: Activate the Home Manager profile
   become: false
-  ansible.builtin.command:
-    cmd: "{{ common_home_manager_activation_link }}/activate"
+  ansible.builtin.shell: |
+    set -Eeuo pipefail
+
+    current_generation="$(readlink -f '{{ common_home_manager_profile_path }}' 2>/dev/null || true)"
+    new_generation="$(readlink -f '{{ common_home_manager_activation_link }}' 2>/dev/null || true)"
+
+    if [[ -n "$new_generation" && "$current_generation" != "$new_generation" ]]; then
+      nix-env --profile '{{ common_home_manager_profile_path }}' --set "$new_generation"
+    fi
+
+    exec '{{ common_home_manager_profile_path }}/activate' --driver-version 1
+  args:
+    executable: /bin/bash
   environment:
     PATH: >-
       {{

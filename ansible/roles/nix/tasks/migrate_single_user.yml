@@ -1,0 +1,99 @@
+---
+- name: Ensure single-user migration is only used with single-user mode
+  ansible.builtin.assert:
+    that:
+      - nix_install_mode == 'single-user'
+    fail_msg: nix migration only supports nix_install_mode=single-user.
+  tags:
+    - nix-migrate-single-user
+
+- name: Check whether a multi-user Nix installation already exists
+  ansible.builtin.stat:
+    path: "{{ common_nix_daemon_profile_script }}"
+  register: nix_migration_daemon_profile_stat
+  tags:
+    - nix-migrate-single-user
+
+- name: Check whether Determinate's uninstaller is available
+  ansible.builtin.stat:
+    path: /nix/nix-installer
+  register: nix_migration_installer_stat
+  when: nix_migration_daemon_profile_stat.stat.exists
+  tags:
+    - nix-migrate-single-user
+
+- name: Uninstall multi-user Nix using Determinate's uninstaller
+  ansible.builtin.command:
+    cmd: /nix/nix-installer uninstall --no-confirm
+  when:
+    - nix_migration_daemon_profile_stat.stat.exists
+    - nix_migration_installer_stat.stat.exists
+  tags:
+    - nix-migrate-single-user
+
+- name: Uninstall multi-user Nix using the upstream Linux removal steps
+  ansible.builtin.shell: |
+    set -Eeuo pipefail
+
+    if command -v systemctl >/dev/null 2>&1; then
+      systemctl stop nix-daemon.service || true
+      systemctl disable nix-daemon.socket nix-daemon.service || true
+      systemctl daemon-reload || true
+    fi
+
+    for file_path in \
+      /etc/bash.bashrc \
+      /etc/bashrc \
+      /etc/profile \
+      /etc/zsh/zshrc \
+      /etc/zshrc; do
+      if [[ ! -f "$file_path" ]]; then
+        continue
+      fi
+
+      python3 -c "import pathlib,re,sys; path=pathlib.Path(sys.argv[1]); text=path.read_text(); updated=re.sub(r\"\\n?# Nix\\nif \\\[ -e '/nix/var/nix/profiles/default/etc/profile\\.d/nix-daemon\\.sh' \\\]; then\\n  \\\. '/nix/var/nix/profiles/default/etc/profile\\.d/nix-daemon\\.sh'\\nfi\\n# End Nix\\n?\", \"\\n\", text, flags=re.MULTILINE); path.write_text(updated) if updated != text else None" "$file_path"
+    done
+
+    rm -rf \
+      /etc/nix \
+      /etc/profile.d/nix.sh \
+      /etc/profile.d/nix-daemon.sh \
+      /etc/tmpfiles.d/nix-daemon.conf \
+      /nix \
+      "$HOME/.local/share/nix" \
+      "$HOME/.local/state/nix" \
+      "$HOME/.cache/nix" \
+      "$HOME/.nix-defexpr" \
+      "$HOME/.nix-profile" \
+      "$HOME/.nix-channels" \
+      /root/.nix-channels \
+      /root/.nix-defexpr \
+      /root/.nix-profile \
+      /root/.cache/nix
+
+    for i in $(seq 1 32); do
+      userdel "nixbld$i" 2>/dev/null || true
+    done
+    groupdel nixbld 2>/dev/null || true
+  args:
+    executable: /bin/bash
+  environment:
+    HOME: "{{ local_home }}"
+  when:
+    - nix_migration_daemon_profile_stat.stat.exists
+    - not nix_migration_installer_stat.stat.exists
+  tags:
+    - nix-migrate-single-user
+
+- name: Reinstall Nix in single-user mode after migration
+  ansible.builtin.include_tasks: main.yml
+  when: nix_migration_daemon_profile_stat.stat.exists
+  tags:
+    - nix-migrate-single-user
+
+- name: Report that no multi-user Nix install was found
+  ansible.builtin.debug:
+    msg: "No multi-user Nix installation was detected; nothing needed to migrate."
+  when: not nix_migration_daemon_profile_stat.stat.exists
+  tags:
+    - nix-migrate-single-user
