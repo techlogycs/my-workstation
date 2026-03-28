@@ -17,6 +17,18 @@
     - packages
     - system
 
+- name: Remove native Thunderbird package after migrating to Flatpak
+  ansible.builtin.apt:
+    name: thunderbird
+    state: absent
+    purge: true
+    autoremove: true
+  when: common_enable_thunderbird
+  tags:
+    - packages
+    - system
+    - thunderbird
+
 - name: Install baseline APT packages
   ansible.builtin.apt:
     name: >-
