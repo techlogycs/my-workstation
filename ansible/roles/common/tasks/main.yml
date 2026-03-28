@@ -21,11 +21,10 @@
         common_only_features: >-
           {{
             (
-              dotfiles_only_features.split(',')
-              if dotfiles_only_features is string
-              else dotfiles_only_features
+              (dotfiles_only_features | default('')).split(',')
+              if (dotfiles_only_features | default('')) is string
+              else (dotfiles_only_features | default([]))
             )
-            | default([], true)
             | map('trim')
             | reject('equalto', '')
             | unique
@@ -219,8 +218,10 @@
         common_home_manager_profile_path: >-
           {{ local_home }}/.local/state/nix/profiles/{{ nix_home_manager_profile_name }}
         common_home_manager_legacy_profile_path: "{{ local_home }}/.local/state/nix/profiles/home-manager"
-        common_home_manager_state_legacy_profile_path: "{{ local_home }}/.local/state/home-manager/profiles/home-manager"
-        common_home_manager_global_legacy_profile_path: "/nix/var/nix/profiles/per-user/{{ local_user }}/home-manager"
+        common_home_manager_state_legacy_profile_path: >-
+          {{ local_home }}/.local/state/home-manager/profiles/home-manager
+        common_home_manager_global_legacy_profile_path: >-
+          /nix/var/nix/profiles/per-user/{{ local_user }}/home-manager
         common_nix_daemon_profile_script: /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
         common_has_gnome_desktop: >-
           {{
@@ -310,15 +311,6 @@
         common_enable_firefox: "{{ common_feature_mode_firefox != 'disabled' }}"
         common_enable_edge: "{{ common_feature_mode_edge != 'disabled' }}"
         common_enable_virt_manager: "{{ common_feature_mode_virt_manager != 'disabled' }}"
-        common_enable_secret_service: >-
-          {{
-            (
-              common_has_gnome_desktop
-              or 'pop' in common_current_desktop
-              or 'cosmic' in common_current_desktop
-            )
-            and (common_enable_vscode or common_enable_git_credential_oauth)
-          }}
         common_openvpn_packages: >-
           {{
             openvpn_core_packages
@@ -420,12 +412,6 @@
             )
             else []
           }}
-        common_secret_service_packages: >-
-          {{
-            gnome_secret_service_packages
-            if common_enable_secret_service
-            else []
-          }}
         common_install_clip_win: >-
           {{
             common_feature_mode_clip_win == 'enabled'
@@ -463,6 +449,27 @@
                 | length
               ) == 0
             )
+          }}
+
+    - name: Derive dependent feature facts
+      ansible.builtin.set_fact:
+        common_enable_secret_service: >-
+          {{
+            (
+              common_has_gnome_desktop
+              or 'pop' in common_current_desktop
+              or 'cosmic' in common_current_desktop
+            )
+            and (common_enable_vscode or common_enable_git_credential_oauth)
+          }}
+
+    - name: Derive secret service package facts
+      ansible.builtin.set_fact:
+        common_secret_service_packages: >-
+          {{
+            gnome_secret_service_packages
+            if common_enable_secret_service
+            else []
           }}
 
     - name: Derive file manager integration facts

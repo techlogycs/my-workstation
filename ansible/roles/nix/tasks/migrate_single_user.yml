@@ -25,6 +25,7 @@
 - name: Uninstall multi-user Nix using Determinate's uninstaller
   ansible.builtin.command:
     cmd: /nix/nix-installer uninstall --no-confirm
+  changed_when: nix_migration_daemon_profile_stat.stat.exists
   when:
     - nix_migration_daemon_profile_stat.stat.exists
     - nix_migration_installer_stat.stat.exists
@@ -51,7 +52,27 @@
         continue
       fi
 
-      python3 -c "import pathlib,re,sys; path=pathlib.Path(sys.argv[1]); text=path.read_text(); updated=re.sub(r\"\\n?# Nix\\nif \\\[ -e '/nix/var/nix/profiles/default/etc/profile\\.d/nix-daemon\\.sh' \\\]; then\\n  \\\. '/nix/var/nix/profiles/default/etc/profile\\.d/nix-daemon\\.sh'\\nfi\\n# End Nix\\n?\", \"\\n\", text, flags=re.MULTILINE); path.write_text(updated) if updated != text else None" "$file_path"
+      python3 - "$file_path" <<'PY'
+    import pathlib
+    import re
+    import sys
+
+    path = pathlib.Path(sys.argv[1])
+    text = path.read_text()
+    updated = re.sub(
+      (
+        r"\n?# Nix\n"
+        r"if \\[ -e '/nix/var/nix/profiles/default/etc/profile\.d/nix-daemon\.sh' \\]; then\n"
+        r"  \\. '/nix/var/nix/profiles/default/etc/profile\.d/nix-daemon\.sh'\n"
+        r"fi\n# End Nix\n?"
+      ),
+      "\n",
+      text,
+      flags=re.MULTILINE,
+    )
+    if updated != text:
+      path.write_text(updated)
+    PY
     done
 
     rm -rf \
@@ -79,6 +100,7 @@
     executable: /bin/bash
   environment:
     HOME: "{{ local_home }}"
+  changed_when: nix_migration_daemon_profile_stat.stat.exists
   when:
     - nix_migration_daemon_profile_stat.stat.exists
     - not nix_migration_installer_stat.stat.exists
