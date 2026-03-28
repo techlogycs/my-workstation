@@ -52,9 +52,23 @@
         path: "{{ local_home }}/.vscode/argv.json"
       register: desktop_apps_vscode_argv_slurp
 
+    - name: Normalize current VS Code runtime arguments JSONC
+      ansible.builtin.set_fact:
+        desktop_apps_vscode_argv_existing_json: >-
+          {{
+            (desktop_apps_vscode_argv_slurp.content | b64decode)
+            | regex_replace('/\\*.*?\\*/', '', multiline=True)
+            | regex_replace('(?m)^\\s*//.*$', '')
+            | trim
+          }}
+
     - name: Parse current VS Code runtime arguments
       ansible.builtin.set_fact:
-        desktop_apps_vscode_argv_existing: "{{ desktop_apps_vscode_argv_slurp.content | b64decode | from_json }}"
+        desktop_apps_vscode_argv_existing: >-
+          {{
+            (desktop_apps_vscode_argv_existing_json | length > 0)
+            | ternary(desktop_apps_vscode_argv_existing_json | from_json, {})
+          }}
   rescue:
     - name: Ignore invalid VS Code runtime arguments JSON and reset
       ansible.builtin.set_fact:
