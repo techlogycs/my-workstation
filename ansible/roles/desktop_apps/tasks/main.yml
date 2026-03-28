@@ -13,9 +13,9 @@
     - vscode
     - brave
 
-- name: Ensure the VS Code configuration directory exists
+- name: Ensure the VS Code runtime arguments directory exists
   ansible.builtin.file:
-    path: "{{ local_home }}/.config/Code"
+    path: "{{ local_home }}/.vscode"
     state: directory
     mode: "0755"
   become: true
@@ -29,7 +29,7 @@
 
 - name: Check whether VS Code runtime arguments file exists
   ansible.builtin.stat:
-    path: "{{ local_home }}/.config/Code/argv.json"
+    path: "{{ local_home }}/.vscode/argv.json"
   register: desktop_apps_vscode_argv_stat
   when:
     - common_enable_vscode
@@ -49,7 +49,7 @@
   block:
     - name: Read current VS Code runtime arguments
       ansible.builtin.slurp:
-        path: "{{ local_home }}/.config/Code/argv.json"
+        path: "{{ local_home }}/.vscode/argv.json"
       register: desktop_apps_vscode_argv_slurp
 
     - name: Parse current VS Code runtime arguments
@@ -76,7 +76,7 @@
 
 - name: Configure VS Code runtime arguments for keyring support on Pop!_OS
   ansible.builtin.copy:
-    dest: "{{ local_home }}/.config/Code/argv.json"
+    dest: "{{ local_home }}/.vscode/argv.json"
     content: "{{ desktop_apps_vscode_argv_effective | to_nice_json }}"
     mode: "0644"
   become: true
