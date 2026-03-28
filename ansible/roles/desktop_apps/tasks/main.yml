@@ -52,52 +52,66 @@
         path: "{{ local_home }}/.vscode/argv.json"
       register: desktop_apps_vscode_argv_slurp
 
-    - name: Normalize current VS Code runtime arguments JSONC
+    - name: Store current VS Code runtime arguments content
       ansible.builtin.set_fact:
-        desktop_apps_vscode_argv_existing_json: >-
-          {{
-            (desktop_apps_vscode_argv_slurp.content | b64decode)
-            | regex_replace('/\\*.*?\\*/', '', multiline=True)
-            | regex_replace('(?m)^\\s*//.*$', '')
-            | trim
-          }}
+        desktop_apps_vscode_argv_existing_content: "{{ desktop_apps_vscode_argv_slurp.content | b64decode }}"
 
-    - name: Parse current VS Code runtime arguments
+    - name: Detect existing VS Code password-store runtime argument
       ansible.builtin.set_fact:
-        desktop_apps_vscode_argv_existing: >-
-          {{
-            (desktop_apps_vscode_argv_existing_json | length > 0)
-            | ternary(desktop_apps_vscode_argv_existing_json | from_json, {})
-          }}
+        desktop_apps_vscode_argv_has_password_store: >-
+          {{ desktop_apps_vscode_argv_existing_content is search('(?m)^\s*"password-store"\s*:') }}
   rescue:
-    - name: Ignore invalid VS Code runtime arguments JSON and reset
+    - name: Ignore unreadable VS Code runtime arguments content and reset
       ansible.builtin.set_fact:
-        desktop_apps_vscode_argv_existing: {}
+        desktop_apps_vscode_argv_existing_content: ''
+        desktop_apps_vscode_argv_has_password_store: false
 
-- name: Compose effective VS Code runtime arguments for Pop!_OS
-  ansible.builtin.set_fact:
-    desktop_apps_vscode_argv_effective: >-
-      {{
-        (desktop_apps_vscode_argv_existing | default({}))
-        | combine({'password-store': 'gnome-libsecret'}, recursive=True)
-      }}
+- name: Update existing VS Code password-store runtime argument on Pop!_OS
+  ansible.builtin.replace:
+    path: "{{ local_home }}/.vscode/argv.json"
+    regexp: '(?m)^(\s*"password-store"\s*:\s*")[^"]*("\s*,?\s*)$'
+    replace: '\1gnome-libsecret\2'
+  become: true
+  become_user: "{{ local_user }}"
   when:
     - common_enable_vscode
     - ansible_distribution == 'Pop!_OS'
+    - desktop_apps_vscode_argv_stat.stat.exists
+    - desktop_apps_vscode_argv_has_password_store | default(false)
   tags:
     - applications
     - vscode
 
-- name: Configure VS Code runtime arguments for keyring support on Pop!_OS
+- name: Add missing VS Code password-store runtime argument on Pop!_OS
+  ansible.builtin.replace:
+    path: "{{ local_home }}/.vscode/argv.json"
+    regexp: '(?m)^(\s*"[^"]+"\s*:\s*.+)(\n\s*})$'
+    replace: '\1,\n\t"password-store": "gnome-libsecret"\2'
+  become: true
+  become_user: "{{ local_user }}"
+  when:
+    - common_enable_vscode
+    - ansible_distribution == 'Pop!_OS'
+    - desktop_apps_vscode_argv_stat.stat.exists
+    - not (desktop_apps_vscode_argv_has_password_store | default(false))
+  tags:
+    - applications
+    - vscode
+
+- name: Create VS Code runtime arguments file when missing on Pop!_OS
   ansible.builtin.copy:
     dest: "{{ local_home }}/.vscode/argv.json"
-    content: "{{ desktop_apps_vscode_argv_effective | to_nice_json }}"
+    content: |
+      {
+        "password-store": "gnome-libsecret"
+      }
     mode: "0644"
   become: true
   become_user: "{{ local_user }}"
   when:
     - common_enable_vscode
     - ansible_distribution == 'Pop!_OS'
+    - not desktop_apps_vscode_argv_stat.stat.exists
   tags:
     - applications
     - vscode
