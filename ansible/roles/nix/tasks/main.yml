@@ -38,7 +38,25 @@
     owner: "{{ local_user }}"
     group: "{{ local_user }}"
     mode: "0755"
-    recurse: true
+  when:
+    - common_enable_nix
+    - nix_install_mode == 'single-user'
+    - not nix_daemon_profile_stat.stat.exists
+    - nix_root_stat.stat.exists
+  tags:
+    - nix
+
+- name: Ensure existing single-user Nix state directories are owned by the target user
+  ansible.builtin.shell: |
+    set -Eeuo pipefail
+
+    for path in /nix/var /nix/var/nix /nix/var/nix/db /nix/var/nix/profiles /nix/store; do
+      if [[ -e "$path" ]]; then
+        chown "{{ local_user }}:{{ local_user }}" "$path"
+      fi
+    done
+  args:
+    executable: /bin/bash
   when:
     - common_enable_nix
     - nix_install_mode == 'single-user'
