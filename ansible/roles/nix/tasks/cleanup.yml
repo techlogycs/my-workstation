@@ -46,7 +46,7 @@
 - name: Garbage collect unreachable Nix store paths
   become: false
   ansible.builtin.command:
-    cmd: nix store gc
+    cmd: nix-collect-garbage
   environment:
     PATH: >-
       {{
