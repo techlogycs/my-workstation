@@ -36,12 +36,16 @@
         name: system
         apply:
           tags:
+            - vscode
+            - git
             - openvpn
             - system
             - packages
             - shell
       when: common_run_role_system
       tags:
+        - vscode
+        - git
         - openvpn
         - system
         - packages

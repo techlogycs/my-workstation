@@ -263,6 +263,7 @@
             | lower
             | trim
           }}
+        common_is_pop_desktop_host: "{{ ansible_distribution == 'Pop!_OS' }}"
 
     - name: Derive Clip-Win release facts
       ansible.builtin.set_fact:
@@ -457,6 +458,7 @@
           {{
             (
               common_has_gnome_desktop
+              or common_is_pop_desktop_host
               or 'pop' in common_current_desktop
               or 'cosmic' in common_current_desktop
             )
