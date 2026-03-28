@@ -1,0 +1,64 @@
+---
+- name: Remove legacy VS Code source file with Signed-By keyring
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/vscode.sources
+    state: absent
+  when: common_enable_vscode
+  tags:
+    - repos
+    - vscode
+
+- name: Remove legacy Microsoft Edge source file
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/microsoft-edge.list
+    state: absent
+  when: common_enable_edge
+  tags:
+    - repos
+    - edge
+
+- name: Remove legacy Brave source file with Signed-By keyring
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/brave-browser-release.sources
+    state: absent
+  when: common_enable_brave
+  tags:
+    - repos
+    - brave
+
+- name: Remove legacy Docker source file with Signed-By keyring
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/docker.sources
+    state: absent
+  when: common_enable_docker
+  tags:
+    - repos
+    - docker
+
+- name: Find legacy Git Core PPA source files
+  ansible.builtin.find:
+    paths: /etc/apt/sources.list.d
+    file_type: file
+    patterns:
+      - git-core-ubuntu-ppa-*.list
+      - git-core-ubuntu-ppa-*.sources
+  register: apt_repositories_git_core_ppa_legacy_sources
+  when:
+    - ansible_distribution in supported_distributions
+    - not common_selective_feature_run or common_enable_git_credential_oauth
+  tags:
+    - repos
+    - git
+
+- name: Remove legacy Git Core PPA source files
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ apt_repositories_git_core_ppa_legacy_sources.files }}"
+  when:
+    - ansible_distribution in supported_distributions
+    - not common_selective_feature_run or common_enable_git_credential_oauth
+    - apt_repositories_git_core_ppa_legacy_sources.matched | default(0) > 0
+  tags:
+    - repos
+    - git

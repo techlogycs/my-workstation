@@ -1,17 +1,37 @@
 ---
-- name: Remove legacy VS Code source file with Signed-By keyring
-  ansible.builtin.file:
-    path: /etc/apt/sources.list.d/vscode.sources
-    state: absent
-  when: common_enable_vscode
+- name: Remove obsolete managed APT source definitions
+  ansible.builtin.include_tasks: cleanup.yml
   tags:
     - repos
     - vscode
+    - edge
+    - brave
+    - docker
 
-- name: Add Microsoft APT signing key
-  ansible.builtin.apt_key:
+- name: Ensure the APT keyrings directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: common_enable_vscode or common_enable_edge or common_enable_docker
+  tags:
+    - packages
+    - system
+    - repos
+    - vscode
+    - edge
+    - docker
+
+- name: Install the Microsoft APT signing key into a dedicated keyring
+  ansible.builtin.get_url:
     url: https://packages.microsoft.com/keys/microsoft.asc
-    state: present
+    dest: /etc/apt/keyrings/microsoft.asc
+    owner: root
+    group: root
+    mode: "0644"
+    force: true
   when: common_enable_vscode or common_enable_edge
   tags:
     - packages
@@ -20,23 +40,37 @@
     - vscode
     - edge
 
-- name: Register the VS Code repository
-  ansible.builtin.apt_repository:
-    repo: "deb [arch={{ common_deb_arch }}] https://packages.microsoft.com/repos/code stable main"
-    state: present
-    filename: vscode
-    update_cache: false
+- name: Render the VS Code repository definition
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/vscode.list
+    content: "{{ (vscode_repo_parts | join(' ')) ~ '\n' }}"
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    vscode_repo_parts:
+      - "deb [arch={{ common_deb_arch }} signed-by=/etc/apt/keyrings/microsoft.asc]"
+      - https://packages.microsoft.com/repos/code
+      - stable
+      - main
   when: common_enable_vscode
   tags:
     - repos
     - vscode
 
-- name: Register the Microsoft Edge repository
-  ansible.builtin.apt_repository:
-    repo: "deb [arch={{ common_deb_arch }}] https://packages.microsoft.com/repos/edge stable main"
-    state: present
-    filename: microsoft-edge-stable
-    update_cache: false
+- name: Render the Microsoft Edge repository definition
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/microsoft-edge-stable.list
+    content: "{{ (edge_repo_parts | join(' ')) ~ '\n' }}"
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    edge_repo_parts:
+      - "deb [arch={{ common_deb_arch }} signed-by=/etc/apt/keyrings/microsoft.asc]"
+      - https://packages.microsoft.com/repos/edge
+      - stable
+      - main
   when: common_enable_edge
   tags:
     - packages
@@ -82,10 +116,14 @@
     - repos
     - docker
 
-- name: Add Docker APT signing key
-  ansible.builtin.apt_key:
+- name: Install the Docker APT signing key into a dedicated keyring
+  ansible.builtin.get_url:
     url: https://download.docker.com/linux/ubuntu/gpg
-    state: present
+    dest: /etc/apt/keyrings/docker.asc
+    owner: root
+    group: root
+    mode: "0644"
+    force: true
   when: common_enable_docker
   tags:
     - packages
@@ -93,14 +131,19 @@
     - repos
     - docker
 
-- name: Register the Docker repository
-  ansible.builtin.apt_repository:
-    repo: >-
-      deb [arch={{ common_deb_arch }}] https://download.docker.com/linux/ubuntu
-      {{ common_ubuntu_codename }} stable
-    state: present
-    filename: docker
-    update_cache: false
+- name: Render the Docker repository definition
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/docker.list
+    content: "{{ (docker_repo_parts | join(' ')) ~ '\n' }}"
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    docker_repo_parts:
+      - "deb [arch={{ common_deb_arch }} signed-by=/etc/apt/keyrings/docker.asc]"
+      - https://download.docker.com/linux/ubuntu
+      - "{{ common_ubuntu_codename }}"
+      - stable
   when: common_enable_docker
   tags:
     - packages
@@ -120,11 +163,38 @@
     - repos
     - copyq
 
-- name: Register the Git Core PPA repository
-  ansible.builtin.apt_repository:
-    repo: ppa:git-core/ppa
-    state: present
-    update_cache: false
+- name: Install the Git Core PPA signing key into a dedicated keyring
+  ansible.builtin.get_url:
+    url: >-
+      https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xF911AB184317630C59970973E363C90F8F1B6217
+    dest: /etc/apt/keyrings/git-core-ppa.asc
+    owner: root
+    group: root
+    mode: "0644"
+    force: true
+  when:
+    - ansible_distribution in supported_distributions
+    - not common_selective_feature_run or common_enable_git_credential_oauth
+  tags:
+    - packages
+    - system
+    - repos
+    - git
+
+- name: Render the Git Core PPA repository definition
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/git-core-ppa.list
+    content: "{{ (git_core_ppa_repo_parts | join(' ')) ~ '\n' }}"
+    owner: root
+    group: root
+    mode: "0644"
+  vars:
+    git_core_ppa_repo_parts:
+      - deb
+      - "[signed-by=/etc/apt/keyrings/git-core-ppa.asc]"
+      - https://ppa.launchpadcontent.net/git-core/ppa/ubuntu
+      - "{{ common_ubuntu_codename }}"
+      - main
   when:
     - ansible_distribution in supported_distributions
     - not common_selective_feature_run or common_enable_git_credential_oauth

@@ -60,6 +60,7 @@ El playbook usa roles pequeños y etiquetados para que puedas ejecutar solo una 
 - `docker`: configuración de `daemon.json` y servicio.
 - `file_manager`: integración “Open in Code”.
 - `nix`: instalación de Nix y activación de Home Manager.
+- `apt-clean`: elimina definiciones legacy de repositorios APT gestionados por el repo, purga paquetes huérfanos y limpia la caché local de APT.
 - `nix-clean`: limpieza de generaciones antiguas del perfil gestionado de Nix/Home Manager y garbage collection del store.
 - `nix-migrate-single-user`: desinstala una instalación multiusuario existente de Nix y reprovisiona Nix en modo `single-user`.
 
@@ -69,9 +70,11 @@ Ejemplos:
 ansible-playbook ansible/local.yml --tags docker
 ansible-playbook ansible/local.yml --tags virt-manager
 ansible-playbook ansible/local.yml --tags nix,file-manager
+ansible-playbook ansible/apt-clean.yml
 ansible-playbook ansible/nix-clean.yml
 ansible-playbook ansible/nix-migrate-single-user.yml
 make install-feature features=thunderbird
+make apt-clean
 make nix-clean
 make nix-migrate-single-user
 ./bootstrap.sh --only-feature thunderbird
@@ -111,6 +114,7 @@ El `Makefile` expone también objetivos separados:
 - `make format-ansible`
 - `make format-nix`
 - `make install-feature features=thunderbird`
+- `make apt-clean`
 - `make nix-migrate-single-user`
 - `make nix-clean`
 
@@ -131,7 +135,8 @@ Los componentes opcionales están controlados desde `ansible/group_vars/all/main
 - `feature_flags.git_credential_oauth` migra la autenticación HTTP(S) de Git a Git Credential Manager, instalado desde un `.deb` upstream fijado por versión y checksum para Ubuntu y Pop!_OS.
 - La configuración global de Git pasa a usar `credential.helper=/usr/local/bin/git-credential-manager` y `credential.credentialStore=secretservice`, de modo que los tokens quedan persistidos en el keyring del escritorio y sobreviven reinicios.
 - Si el host tiene una sesión GNOME, Pop o COSMIC y habilitas VS Code o Git Credential Manager, el playbook instala `gnome-keyring` para que exista un proveedor Secret Service/libsecret y no aparezca el warning de keyring en VS Code.
-- El playbook elimina `git-credential-oauth` y mantiene `ppa:git-core/ppa` en Ubuntu y Pop!_OS para instalar una versión upstream reciente de Git, compatible con Git Credential Manager.
+- El playbook elimina `git-credential-oauth` y mantiene el repositorio estable de git-core en Ubuntu y Pop!_OS para instalar una versión upstream reciente de Git, compatible con Git Credential Manager.
+- Los repositorios APT gestionados directamente por este repo para Microsoft, Docker y git-core usan keyrings dedicados bajo `/etc/apt/keyrings`, y el flujo `apt-clean` borra definiciones legacy conocidas para evitar entradas duplicadas o avisos por `trusted.gpg` en `apt`.
 - `apt_base_packages` incluye `ripgrep`, y el entorno de Home Manager añade `ripgrep` para que el comando `rg` exista tanto en la capa del sistema como en la del usuario.
 - `distro_flatpak_apps` define las aplicaciones de escritorio vía Flatpak por distro, excluyendo RustDesk porque se instala de forma nativa.
 - `rustdesk_version` fija la versión de RustDesk que se descarga como paquete `.deb`.

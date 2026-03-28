@@ -63,14 +63,14 @@
   rescue:
     - name: Ignore unreadable VS Code runtime arguments content and reset
       ansible.builtin.set_fact:
-        desktop_apps_vscode_argv_existing_content: ''
+        desktop_apps_vscode_argv_existing_content: ""
         desktop_apps_vscode_argv_has_password_store: false
 
 - name: Update existing VS Code password-store runtime argument on Pop!_OS
   ansible.builtin.replace:
     path: "{{ local_home }}/.vscode/argv.json"
     regexp: '(?m)^(\s*"password-store"\s*:\s*")[^"]*("\s*,?\s*)$'
-    replace: '\1gnome-libsecret\2'
+    replace: "\\1gnome-libsecret\\2"
   become: true
   become_user: "{{ local_user }}"
   when:

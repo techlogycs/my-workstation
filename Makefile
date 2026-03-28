@@ -1,4 +1,4 @@
-.PHONY: lint lint-ansible lint-nix format format-ansible format-nix check-ansible-tools check-nix-tools bootstrap ansible-requirements playbook install-feature nix-clean nix-migrate-single-user
+.PHONY: lint lint-ansible lint-nix format format-ansible format-nix check-ansible-tools check-nix-tools bootstrap ansible-requirements playbook install-feature apt-clean nix-clean nix-migrate-single-user
 
 NIX_DIR := ./nix
 ANSIBLE_DIR := ansible
@@ -44,6 +44,10 @@ install-feature:
 	@if [ -z "$(features)" ]; then echo "Usage: make install-feature features=thunderbird"; exit 2; fi
 	@$(MAKE) check-ansible-runtime
 	ansible-playbook $(ANSIBLE_DIR)/local.yml --extra-vars "dotfiles_only_features=$(features)"
+
+apt-clean:
+	@$(MAKE) check-ansible-runtime
+	ansible-playbook $(ANSIBLE_DIR)/apt-clean.yml
 
 nix-clean:
 	@$(MAKE) check-ansible-runtime

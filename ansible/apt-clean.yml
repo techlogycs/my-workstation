@@ -1,0 +1,56 @@
+---
+- name: Clean APT cache, stale repository files, and unused packages
+  hosts: workstation
+  gather_facts: true
+  become: true
+
+  pre_tasks:
+    - name: Load shared workstation facts
+      ansible.builtin.include_role:
+        name: common
+        apply:
+          tags:
+            - always
+            - facts
+      tags:
+        - always
+        - facts
+
+  tasks:
+    - name: Reconcile managed APT repository definitions
+      ansible.builtin.include_role:
+        name: apt_repositories
+        apply:
+          tags:
+            - apt-clean
+            - repos
+      when: common_run_role_apt_repositories
+      tags:
+        - apt-clean
+        - repos
+
+    - name: Remove unused APT packages and purge residual configuration
+      ansible.builtin.apt:
+        autoremove: true
+        purge: true
+      tags:
+        - apt-clean
+
+    - name: Drop obsolete package files from the APT cache
+      ansible.builtin.apt:
+        autoclean: true
+      tags:
+        - apt-clean
+
+    - name: Clear the local APT cache
+      ansible.builtin.apt:
+        clean: true
+      tags:
+        - apt-clean
+
+    - name: Refresh APT metadata after cleanup
+      ansible.builtin.apt:
+        update_cache: true
+      changed_when: false
+      tags:
+        - apt-clean

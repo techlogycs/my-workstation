@@ -50,13 +50,26 @@
   ansible.builtin.shell: |
     set -Eeuo pipefail
 
+    changed=0
+
     for path in /nix/var /nix/var/nix /nix/var/nix/db /nix/var/nix/profiles /nix/store; do
       if [[ -e "$path" ]]; then
-        chown "{{ local_user }}:{{ local_user }}" "$path"
+        current_owner="$(stat -c '%U:%G' "$path")"
+
+        if [[ "$current_owner" != "{{ local_user }}:{{ local_user }}" ]]; then
+          chown "{{ local_user }}:{{ local_user }}" "$path"
+          printf '%s\n' "$path"
+          changed=1
+        fi
       fi
     done
+
+    exit "$changed"
   args:
     executable: /bin/bash
+  register: nix_single_user_state_dirs_chown
+  changed_when: nix_single_user_state_dirs_chown.rc == 1
+  failed_when: nix_single_user_state_dirs_chown.rc not in [0, 1]
   when:
     - common_enable_nix
     - nix_install_mode == 'single-user'
